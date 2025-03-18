@@ -47,3 +47,7 @@ Route::post('/register', function (Request $request) {
     }
 });
 
+Route::get('/', function () {
+    return view('welcome');
+});
+

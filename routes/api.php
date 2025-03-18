@@ -26,7 +26,9 @@ Route::post('/register', function (Request $request) {
         }
 
         // 🔹 Verificar token con Firebase
-        $auth = (new Factory)->withServiceAccount(storage_path(env('FIREBASE_CREDENTIALS')))->createAuth();
+        $auth = (new Factory)
+            ->withServiceAccount(config('firebase.credentials'))
+            ->createAuth();
         $verifiedIdToken = $auth->verifyIdToken($token);
         $firebaseUser = $verifiedIdToken->claims();
 
@@ -45,6 +47,3 @@ Route::post('/register', function (Request $request) {
     }
 });
 
-Route::get('/ping', function () {
-    return response()->json(['message' => 'API is working! 🚀']);
-});

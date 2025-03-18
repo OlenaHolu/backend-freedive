@@ -19,7 +19,7 @@ class FirebaseAuthMiddleware
 
         try {
             $auth = (new Factory)
-                ->withServiceAccount(storage_path(env('FIREBASE_CREDENTIALS')))
+                ->withServiceAccount(config('firebase.credentials'))
                 ->createAuth();
 
             $verifiedIdToken = $auth->verifyIdToken($token);

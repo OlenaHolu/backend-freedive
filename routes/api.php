@@ -44,6 +44,8 @@ Route::post('/register', function (Request $request) {
         return response()->json(['message' => 'User registered successfully', 'user' => $user]);
     } catch (FailedToVerifyToken $e) {
         return response()->json(['error' => 'Invalid Firebase token'], 401);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Error interno', 'details' => $e->getMessage()], 500);
     }
 });
 

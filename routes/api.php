@@ -44,3 +44,7 @@ Route::post('/register', function (Request $request) {
         return response()->json(['error' => 'Invalid Firebase token'], 401);
     }
 });
+
+Route::get('/ping', function () {
+    return response()->json(['message' => 'API is working! 🚀']);
+});

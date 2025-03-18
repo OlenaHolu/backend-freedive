@@ -52,29 +52,25 @@ Route::post('/register', function (Request $request) {
 
 Route::post('/login', function (Request $request) {
     try {
-        $token = $request->input('firebase_token'); // 🔹 Asegúrate de recibir este token desde el frontend
+        $token = $request->input('firebase_token');
         if (!$token) {
             return response()->json(['error' => 'Token no proporcionado'], 401);
         }
 
-        // 🔹 Verificar el token con Firebase
+        // 🔹 Verificar token con Firebase
         $auth = (new Factory)->withServiceAccount(config('firebase.credentials'))->createAuth();
         $verifiedIdToken = $auth->verifyIdToken($token);
         $firebaseUser = $verifiedIdToken->claims();
 
-        // 🔹 Buscar el usuario en la base de datos por email
-        $user = User::where('email', $firebaseUser->get('email'))->first();
+        // 🔹 Buscar o crear el usuario en la base de datos
+        $user = \App\Models\User::updateOrCreate(
+            ['email' => $firebaseUser->get('email')],
+            ['name' => $firebaseUser->get('name')]
+        );
 
-        if (!$user) {
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
-        }
-
-        return response()->json([
-            'message' => 'Login exitoso',
-            'user' => $user,
-        ]);
+        return response()->json(['message' => 'Login exitoso', 'user' => $user]);
     } catch (FailedToVerifyToken $e) {
-        return response()->json(['error' => 'Token inválido'], 401);
+        return response()->json(['error' => 'Token de Firebase inválido'], 401);
     }
 });
 

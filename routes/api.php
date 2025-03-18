@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
+use App\Models\User;
 
 // 🔹 Ruta para obtener el usuario autenticado (requiere token de Firebase)
 Route::middleware(['firebase'])->get('/user', function (Request $request) {

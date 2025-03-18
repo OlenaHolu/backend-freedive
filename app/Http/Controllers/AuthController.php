@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -80,12 +81,14 @@ class AuthController extends Controller
             $verifiedIdToken = $this->auth->verifyIdToken($token);
             $firebaseUser = $verifiedIdToken->claims();
 
-            // 🔹 Buscar o crear el usuario en la base de datos
+            // 🔹 Registrar el contenido del token en los logs de Laravel
+            Log::info('Firebase User Data:', (array) $firebaseUser);
+
             $user = User::updateOrCreate(
                 ['email' => $firebaseUser->get('email')],
                 [
                     'name' => $firebaseUser->get('name'),
-                    'photo' => $firebaseUser->get('picture') ?? null, // 🔹 Guardar la foto
+                    'photo' => $firebaseUser->get('picture') ?? null,
                 ]
             );
 

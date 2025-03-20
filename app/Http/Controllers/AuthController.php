@@ -67,34 +67,41 @@ class AuthController extends Controller
     }
 
     /**
-     * Login de usuario
+     * Login
      */
     public function login(Request $request)
-    {
-        try {
-            $token = $request->input('firebase_token');
-            if (!$token) {
-                return response()->json(['error' => 'Token no proporcionado'], 401);
-            }
-
-            // 🔹 Verificar token con Firebase
-            $verifiedIdToken = $this->auth->verifyIdToken($token);
-            $firebaseUser = $verifiedIdToken->claims();
-
-            // 🔹 Registrar el contenido del token en los logs de Laravel
-            Log::info('Firebase User Data:', (array) $firebaseUser);
-
-            $user = User::updateOrCreate(
-                ['email' => $firebaseUser->get('email')],
-                [
-                    'name' => $firebaseUser->get('name'),
-                    'photo' => $firebaseUser->get('picture') ?? null,
-                ]
-            );
-
-            return response()->json(['message' => 'Login exitoso', 'user' => $user]);
-        } catch (FailedToVerifyToken $e) {
-            return response()->json(['error' => 'Token de Firebase inválido'], 401);
+{
+    try {
+        $token = $request->input('firebase_token');
+        if (!$token) {
+            return response()->json(['error' => 'Token no proporcionado'], 401);
         }
+
+        // 🔹 Verify token with Firebase
+        $verifiedIdToken = $this->auth->verifyIdToken($token);
+        $firebaseUser = $verifiedIdToken->claims();
+
+        // 🔹 Log the received data for debugging
+        Log::info('Firebase User Data:', (array) $firebaseUser);
+
+        // 🔹 Ensure the name field is not null
+        $userName = $firebaseUser->get('name') ?? 'Unknown User';
+
+        // 🔹 Update or create user in the database
+        $user = User::updateOrCreate(
+            ['email' => $firebaseUser->get('email')],
+            [
+                'name' => $userName, // 🔥 This prevents NULL values
+                'photo' => $firebaseUser->get('picture') ?? null,
+            ]
+        );
+
+        return response()->json(['message' => 'Login exitoso', 'user' => $user]);
+    } catch (FailedToVerifyToken $e) {
+        return response()->json(['error' => 'Token de Firebase inválido'], 401);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Error interno', 'details' => $e->getMessage()], 500);
     }
+}
+
 }

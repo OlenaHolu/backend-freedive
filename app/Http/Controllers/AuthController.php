@@ -17,17 +17,20 @@ class AuthController extends Controller
     {
         $firebaseCredentials = config('firebase.credentials');
 
-        // 🛑 Revisa si realmente es un array antes de pasar a Firebase
+        if (is_string($firebaseCredentials)) {
+            \Log::error('FIREBASE_CREDENTIALS is a string instead of an array');
+            $firebaseCredentials = json_decode($firebaseCredentials, true);
+        }
+
         if (!is_array($firebaseCredentials)) {
-            \Log::error('Firebase credentials are not an array: ' . json_encode($firebaseCredentials));
-            throw new \Exception('Firebase credentials are not an array!');
+            \Log::error('FIREBASE_CREDENTIALS is not a valid array', ['credentials' => $firebaseCredentials]);
+            throw new \Exception('Invalid Firebase Credentials!');
         }
 
         $this->auth = (new Factory)
-            ->withServiceAccount($firebaseCredentials) // ← 🛑 Este debe ser un array
+            ->withServiceAccount($firebaseCredentials)
             ->createAuth();
     }
-
 
     private function verifyFirebaseToken($token)
     {

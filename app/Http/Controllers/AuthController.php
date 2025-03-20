@@ -95,19 +95,29 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            $token = $request->bearerToken(); // 🔥 Corrected token retrieval
-            $name = $request->input('name');
-            $photo = $request->input('photo');
+            Log::info('Token recibido:', ['token' => $request->input('firebase_token')]); // 👀 Verifica si Laravel recibe el token
 
-            $firebaseData = $this->verifyFirebaseToken($token);
+            $token = $request->input('firebase_token');
+            if (!$token) {
+                return response()->json(['error' => 'Token no proporcionado'], 401);
+            }
 
-            // 🔹 Update Firebase User Profile with Name
-            $this->auth->updateUser($firebaseData['uid'], [
-                'displayName' => $name ?? 'Unknown User',
-            ]);
+            $auth = (new Factory)
+            ->withServiceAccount(config('firebase.credentials'))
+            ->createAuth();
+        $verifiedIdToken = $auth->verifyIdToken($token);
+        $firebaseUser = $verifiedIdToken->claims();
 
-            $user = $this->syncUserWithFirebase($firebaseData['uid'], $firebaseData['email'], $name, $photo);
-
+        // 🔹 Guardar usuario en la base de datos con su UID de Firebase
+        $user = \App\Models\User::updateOrCreate(
+            ['email' => $firebaseUser->get('email')],
+            [
+                'name' => $request->input('name', 'Sin nombre'),
+                'firebase_uid' => $firebaseUser->get('sub'),
+                'photo' => $firebaseUser->get('picture') ?? null // 👀 Verificar si la foto se está guardando
+            ]
+        );
+        
             return response()->json(['message' => 'User registered successfully', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);

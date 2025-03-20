@@ -26,18 +26,18 @@ class AuthController extends Controller
             Log::info('Token recibido en /user:', ['token' => $request->bearerToken()]);
 
             if (!$request->firebase_user) {
-        return response()->json(['error' => 'Token no válido o expirado'], 401);
-    }
+                return response()->json(['error' => 'Token no válido o expirado'], 401);
+            }
 
-    return response()->json([
-        'user' => [
-            'id' => $request->firebase_user['sub'],
-            'email' => $request->firebase_user['email'],
-            'name' => $request->firebase_user['name'] ?? 'Sin nombre',
-            'photo' => $request->firebase_user['picture'] ?? null,
-        ]
+            return response()->json([
+                'user' => [
+                    'id' => $request->firebase_user['sub'],
+                    'email' => $request->firebase_user['email'],
+                    'name' => $request->firebase_user['name'] ?? 'Sin nombre',
+                    'photo' => $request->firebase_user['picture'] ?? null,
+                ]
             ]);
-      } catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json(['error' => 'Internal server error', 'details' => $e->getMessage()], 500);
         }
     }
@@ -53,21 +53,21 @@ class AuthController extends Controller
             }
 
             $auth = (new Factory)
-            ->withServiceAccount(config('firebase.credentials'))
-            ->createAuth();
-        $verifiedIdToken = $auth->verifyIdToken($token);
-        $firebaseUser = $verifiedIdToken->claims();
+                ->withServiceAccount(config('firebase.credentials'))
+                ->createAuth();
+            $verifiedIdToken = $auth->verifyIdToken($token);
+            $firebaseUser = $verifiedIdToken->claims();
 
-        // 🔹 Guardar usuario en la base de datos con su UID de Firebase
-        $user = \App\Models\User::updateOrCreate(
-            ['email' => $firebaseUser->get('email')],
-            [
-                'name' => $request->input('name', 'Sin nombre'),
-                'firebase_uid' => $firebaseUser->get('sub'),
-                'photo' => $firebaseUser->get('picture') ?? null 
-            ]
-        );
-        
+            // 🔹 Guardar usuario en la base de datos con su UID de Firebase
+            $user = User::updateOrCreate(
+                ['email' => $firebaseUser->get('email')],
+                [
+                    'name' => $request->input('name'),
+                    'firebase_uid' => $firebaseUser->get('sub'),
+                    'photo' => $firebaseUser->get('picture') ?? null
+                ]
+            );
+
             return response()->json(['message' => 'User registered successfully', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);
@@ -86,22 +86,12 @@ class AuthController extends Controller
             // 🔹 Verify token with Firebase
             $verifiedIdToken = $this->auth->verifyIdToken($token);
             $firebaseUid = $verifiedIdToken->claims()->get('sub');
-            $firebaseEmail = $verifiedIdToken->claims()->get('email');
 
-            // 🔹 Fetch user info from Firebase
-            $firebaseUser = $this->auth->getUser($firebaseUid);
-            $firebaseDisplayName = $firebaseUser->displayName ?? 'Unknown User';
-            $firebasePhoto = $firebaseUser->photoUrl ?? null;
-
-            // 🔹 Update local database user
-            $user = User::updateOrCreate(
-                ['email' => $firebaseEmail],
-                [
-                    'name' => $firebaseDisplayName, 
-                    'firebase_uid' => $firebaseUid,
-                    'photo' => $firebasePhoto,
-                ]
-            );
+            // find user in database
+            $user = User::where('firebase_uid', $firebaseUid)->first();
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
 
             return response()->json(['message' => 'Login successful', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {

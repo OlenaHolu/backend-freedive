@@ -35,12 +35,14 @@ class AuthController extends Controller
     }
 
     /**
-     * Registrar usuario
+     * Register
      */
     public function register(Request $request)
     {
         try {
             $token = $request->input('firebase_token');
+            $name = $request->input('name'); // 🔹 Get the name from the request
+
             if (!$token) {
                 return response()->json(['error' => 'Token not provided'], 401);
             }
@@ -49,12 +51,16 @@ class AuthController extends Controller
             $verifiedIdToken = $this->auth->verifyIdToken($token);
             $firebaseUser = $verifiedIdToken->claims();
 
+             // 🔹 Set a default name if it's missing
+            $userName = $name ?? $firebaseUser->get('name') ?? 'Unknown User';
+
             // 🔹 Guardar usuario en la base de datos
             $user = User::updateOrCreate(
                 ['email' => $firebaseUser->get('email')],
                 [
-                    'name' => $request->input('name', 'Sin nombre'),
-                    'firebase_uid' => $firebaseUser->get('sub')
+                    'name' => $userName,
+                    'firebase_uid' => $firebaseUser->get('sub'),
+                    'photo' => $firebaseUser->get('picture') ?? null,
                 ]
             );
 

@@ -31,4 +31,8 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'firebase' => [
+    'credentials' => json_decode(env('FIREBASE_CREDENTIALS'), true),
+],
+
 ];

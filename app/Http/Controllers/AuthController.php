@@ -2,22 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
+
 
 class AuthController extends Controller
 {
     private $auth;
 
     public function __construct()
-    {
-        $this->auth = (new Factory)
-            ->withServiceAccount(json_decode(env('FIREBASE_CREDENTIALS'), true))
-            ->createAuth();
+{
+    $firebaseConfig = config('firebase.credentials');
+
+    Log::info('FIREBASE CONFIG:', $firebaseConfig);
+
+    if (!$firebaseConfig) {
+        Log::error('Firebase credentials not found!');
+        throw new \Exception('Firebase credentials not found!');
     }
+
+    $this->auth = (new Factory)
+        ->withServiceAccount($firebaseConfig)
+        ->createAuth();
+}
+
+
 
     private function verifyFirebaseToken($token)
     {

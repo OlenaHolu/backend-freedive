@@ -11,3 +11,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/debug-firebase', function () {
+    return response()->json([
+        'firebase_credentials' => env('FIREBASE_CREDENTIALS'),
+    ]);
+});
+

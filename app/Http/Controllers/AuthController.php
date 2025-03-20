@@ -28,30 +28,28 @@ class AuthController extends Controller
     }
 
     private function verifyFirebaseToken($token)
-    {
-        Log::info('Token recibido:', ['token' => $token]);
-    
-        if (!$token) {
-            Log::error('Error: Token no proporcionado');
-            throw new \InvalidArgumentException('Token not provided');
-        }
-    
-        try {
-            $verifiedIdToken = $this->auth->verifyIdToken($token);
-            Log::info('Token verificado correctamente.');
-    
-            $firebaseUid = $verifiedIdToken->claims()->get('sub');
-            $firebaseEmail = $verifiedIdToken->claims()->get('email');
-    
-            return [
-                'uid' => $firebaseUid,
-                'email' => $firebaseEmail,
-            ];
-        } catch (FailedToVerifyToken $e) {
-            Log::error('Error verificando token: ' . $e->getMessage());
-            throw new \Exception('Invalid Firebase token');
-        }
+{
+    if (!$token) {
+        Log::error("🔴 Error: No se recibió un token de Firebase.");
+        throw new \InvalidArgumentException('Token not provided');
     }
+
+    try {
+        Log::info("🔵 Token recibido: " . $token);
+
+        $verifiedIdToken = $this->auth->verifyIdToken($token);
+        Log::info("🟢 Token verificado correctamente", ['claims' => $verifiedIdToken->claims()]);
+
+        return [
+            'uid' => $verifiedIdToken->claims()->get('sub'),
+            'email' => $verifiedIdToken->claims()->get('email'),
+        ];
+    } catch (\Throwable $e) {
+        Log::error("🔴 Error al verificar el token de Firebase", ['error' => $e->getMessage()]);
+        throw new \Exception("Token inválido.");
+    }
+}
+
     
 
     private function syncUserWithFirebase($firebaseUid, $firebaseEmail, $name = null, $photo = null)

@@ -29,19 +29,30 @@ class AuthController extends Controller
 
     private function verifyFirebaseToken($token)
     {
+        Log::info('Token recibido:', ['token' => $token]);
+    
         if (!$token) {
+            Log::error('Error: Token no proporcionado');
             throw new \InvalidArgumentException('Token not provided');
         }
-
-        $verifiedIdToken = $this->auth->verifyIdToken($token);
-        $firebaseUid = $verifiedIdToken->claims()->get('sub');
-        $firebaseEmail = $verifiedIdToken->claims()->get('email');
-
-        return [
-            'uid' => $firebaseUid,
-            'email' => $firebaseEmail,
-        ];
+    
+        try {
+            $verifiedIdToken = $this->auth->verifyIdToken($token);
+            Log::info('Token verificado correctamente.');
+    
+            $firebaseUid = $verifiedIdToken->claims()->get('sub');
+            $firebaseEmail = $verifiedIdToken->claims()->get('email');
+    
+            return [
+                'uid' => $firebaseUid,
+                'email' => $firebaseEmail,
+            ];
+        } catch (FailedToVerifyToken $e) {
+            Log::error('Error verificando token: ' . $e->getMessage());
+            throw new \Exception('Invalid Firebase token');
+        }
     }
+    
 
     private function syncUserWithFirebase($firebaseUid, $firebaseEmail, $name = null, $photo = null)
     {

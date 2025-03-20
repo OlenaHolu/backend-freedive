@@ -11,24 +11,22 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
-    private $auth;
+    protected $auth;
 
     public function __construct()
-{
-    $firebaseConfig = config('firebase.credentials');
+    {
+        $firebaseCredentials = config('firebase.credentials');
 
-    Log::info('FIREBASE CONFIG:', $firebaseConfig);
+        // 🛑 Revisa si realmente es un array antes de pasar a Firebase
+        if (!is_array($firebaseCredentials)) {
+            \Log::error('Firebase credentials are not an array: ' . json_encode($firebaseCredentials));
+            throw new \Exception('Firebase credentials are not an array!');
+        }
 
-    if (!$firebaseConfig) {
-        Log::error('Firebase credentials not found!');
-        throw new \Exception('Firebase credentials not found!');
+        $this->auth = (new Factory)
+            ->withServiceAccount($firebaseCredentials) // ← 🛑 Este debe ser un array
+            ->createAuth();
     }
-
-    $this->auth = (new Factory)
-        ->withServiceAccount($firebaseConfig)
-        ->createAuth();
-}
-
 
 
     private function verifyFirebaseToken($token)

@@ -86,12 +86,22 @@ class AuthController extends Controller
             // 🔹 Verify token with Firebase
             $verifiedIdToken = $this->auth->verifyIdToken($token);
             $firebaseUid = $verifiedIdToken->claims()->get('sub');
+            $firebaseEmail = $verifiedIdToken->claims()->get('email');
 
-            // find user in database
-            $user = User::where('firebase_uid', $firebaseUid)->first();
-            if (!$user) {
-                return response()->json(['error' => 'User not found'], 404);
-            }
+            // 🔹 Fetch user info from Firebase
+            $firebaseUser = $this->auth->getUser($firebaseUid);
+            $firebaseDisplayName = $firebaseUser->displayName ?? 'Unknown User';
+            $firebasePhoto = $firebaseUser->photoUrl ?? null;
+
+    // find user in database
+            $user = User::updateOrCreate(
+                ['email' => $firebaseEmail],
+                [
+                    'name' => $firebaseDisplayName,
+                    'firebase_uid' => $firebaseUid,
+                    'photo' => $firebasePhoto,
+                ]
+            );
 
             return response()->json(['message' => 'Login successful', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {

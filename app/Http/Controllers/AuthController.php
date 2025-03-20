@@ -79,7 +79,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         try {
-            $token = $request->bearerToken(); // 🔥 Corrected token retrieval
+            $token = $request->input('firebase_token');
             if (!$token) {
                 return response()->json(['error' => 'Token no proporcionado'], 401);
             }

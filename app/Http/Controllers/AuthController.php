@@ -14,14 +14,8 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $credentials = config('firebase.credentials');
-
-        if (!$credentials || empty($credentials)) {
-            throw new \Exception('FIREBASE_CREDENTIALS is not set or is empty.');
-        }
-
         $this->auth = (new Factory)
-            ->withServiceAccount($credentials)
+            ->withServiceAccount(json_decode(env('FIREBASE_CREDENTIALS'), true))
             ->createAuth();
     }
 

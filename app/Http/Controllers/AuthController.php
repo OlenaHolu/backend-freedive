@@ -15,20 +15,15 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $firebaseCredentials = config('firebase.credentials');
-
-        if (is_string($firebaseCredentials)) {
-            \Log::error('FIREBASE_CREDENTIALS is a string instead of an array');
-            $firebaseCredentials = json_decode($firebaseCredentials, true);
+        $credentials = config('firebase.credentials');
+    
+        if (empty($credentials) || !is_array($credentials)) {
+            Log::error('Error al cargar las credenciales de Firebase');
+            throw new \Exception("No se han cargado las credenciales de Firebase.");
         }
-
-        if (!is_array($firebaseCredentials)) {
-            \Log::error('FIREBASE_CREDENTIALS is not a valid array', ['credentials' => $firebaseCredentials]);
-            throw new \Exception('Invalid Firebase Credentials!');
-        }
-
+    
         $this->auth = (new Factory)
-            ->withServiceAccount($firebaseCredentials)
+            ->withServiceAccount($credentials)
             ->createAuth();
     }
 

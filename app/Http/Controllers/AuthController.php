@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -14,13 +15,10 @@ class AuthController extends Controller
     public function __construct()
     {
         $this->auth = (new Factory)
-            ->withServiceAccount(config('firebase.credentials'))
+            ->withServiceAccount(json_decode(env('FIREBASE_CREDENTIALS'), true)) // 🔥 Corrected loading
             ->createAuth();
     }
 
-    /**
-     * Verifies the Firebase token and retrieves user data.
-     */
     private function verifyFirebaseToken($token)
     {
         if (!$token) {
@@ -37,9 +35,6 @@ class AuthController extends Controller
         ];
     }
 
-    /**
-     * Fetches user details from Firebase and updates the local database.
-     */
     private function syncUserWithFirebase($firebaseUid, $firebaseEmail, $name = null, $photo = null)
     {
         $firebaseUser = $this->auth->getUser($firebaseUid);
@@ -58,7 +53,7 @@ class AuthController extends Controller
     public function getUser(Request $request)
     {
         try {
-            $token = $request->input('firebase_token');
+            $token = $request->bearerToken(); // 🔥 Corrected method for getting token
             $firebaseData = $this->verifyFirebaseToken($token);
 
             $user = $this->syncUserWithFirebase($firebaseData['uid'], $firebaseData['email']);
@@ -83,13 +78,13 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            $token = $request->input('firebase_token');
+            $token = $request->bearerToken(); // 🔥 Corrected token retrieval
             $name = $request->input('name');
             $photo = $request->input('photo');
 
             $firebaseData = $this->verifyFirebaseToken($token);
 
-            // Update Firebase User Profile with Name
+            // 🔹 Update Firebase User Profile with Name
             $this->auth->updateUser($firebaseData['uid'], [
                 'displayName' => $name ?? 'Unknown User',
             ]);
@@ -99,28 +94,45 @@ class AuthController extends Controller
             return response()->json(['message' => 'User registered successfully', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], 401);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Internal server error', 'details' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Error interno', 'details' => $e->getMessage()], 500);
         }
     }
 
     public function login(Request $request)
     {
         try {
-            $token = $request->input('firebase_token');
-            $firebaseData = $this->verifyFirebaseToken($token);
+            $token = $request->bearerToken(); // 🔥 Corrected token retrieval
 
-            $user = $this->syncUserWithFirebase($firebaseData['uid'], $firebaseData['email']);
+            // 🔹 Verify token with Firebase
+            $verifiedIdToken = $this->auth->verifyIdToken($token);
+            $firebaseUid = $verifiedIdToken->claims()->get('sub');
+            $firebaseEmail = $verifiedIdToken->claims()->get('email');
 
-            return response()->json(['message' => 'Login exitoso', 'user' => $user]);
+            // 🔹 Fetch user info from Firebase
+            $firebaseUser = $this->auth->getUser($firebaseUid);
+            $firebaseDisplayName = $firebaseUser->displayName ?? 'Unknown User';
+
+            // 🔹 Update local database user
+            $user = User::updateOrCreate(
+                ['email' => $firebaseEmail],
+                [
+                    'name' => $firebaseDisplayName, // 🔥 Always update name from Firebase
+                    'firebase_uid' => $firebaseUid,
+                    'photo' => $firebaseUser->photoUrl ?? null,
+                ]
+            );
+
+            // 🔹 If Firebase user has no name, update it
+            if (empty($firebaseUser->displayName)) {
+                $this->auth->updateUser($firebaseUid, ['displayName' => $user->name]);
+            }
+
+            return response()->json(['message' => 'Login successful', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], 401);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Internal server error', 'details' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Internal error', 'details' => $e->getMessage()], 500);
         }
     }
 }

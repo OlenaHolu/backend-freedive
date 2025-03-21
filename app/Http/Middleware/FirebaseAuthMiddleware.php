@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Auth as FirebaseAuth;
-use Kreait\Firebase\Exception\Auth\FailedToVerifyToken; // Nuevo namespace correcto
+use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 
 class FirebaseAuthMiddleware
 {
@@ -23,11 +23,11 @@ class FirebaseAuthMiddleware
                 ->createAuth();
 
             $verifiedIdToken = $auth->verifyIdToken($token);
-            
-            // Almacenar información del usuario sin sobrescribir `user`
-            $request->merge(['firebase_user' => $verifiedIdToken->claims()]);
 
-        } catch (FailedToVerifyToken $e) { // Nuevo nombre de la excepción
+            // Añadimos los claims del token verificado al request
+            $request->merge(['firebase_user' => $verifiedIdToken->claims()->all()]);
+
+        } catch (FailedToVerifyToken $e) { 
             return response()->json(['error' => 'Invalid Firebase token'], 401);
         }
 

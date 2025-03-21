@@ -44,8 +44,6 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            Log::info('Token recibido:', ['token' => $request->input('firebase_token')]);
-
             $token = $request->input('firebase_token');
             if (!$token) {
                 return response()->json(['error' => 'Token no proporcionado'], 401);
@@ -61,12 +59,13 @@ class AuthController extends Controller
             $user = User::updateOrCreate(
                 ['email' => $firebaseUser->get('email')],
                 [
-                    'name' => $request->input('name'),
+                    'name' => $request->input('name')
+                        ?? $firebaseUser->get('name')
+                        ?? 'Unknown User',
                     'firebase_uid' => $firebaseUser->get('sub'),
                     'photo' => $firebaseUser->get('picture') ?? null
                 ]
             );
-
             return response()->json(['message' => 'User registered successfully', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);

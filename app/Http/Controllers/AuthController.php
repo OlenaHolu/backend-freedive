@@ -27,12 +27,15 @@ class AuthController extends Controller
                 return response()->json(['error' => 'Token no válido o expirado'], 401);
             }
 
+            $claims = $request->firebase_user;
+            $user = User::where('email', $claims['email'])->first();
+
             return response()->json([
                 'user' => [
-                    'id' => $request->firebase_user['sub'],
-                    'email' => $request->firebase_user['email'],
-                    'name' => $request->firebase_user['name'] ?? 'Sin nombre',
-                    'photo' => $request->firebase_user['picture'] ?? null,
+                    'id' => $claims['sub'],
+                    'email' => $claims['email'],
+                    'name' => $user->name ?? $claims['name'] ?? 'Unknown User',
+                    'photo' => $user->photo ?? $claims['picture'] ?? null
                 ]
             ]);
             

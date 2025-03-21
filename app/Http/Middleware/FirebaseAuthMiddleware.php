@@ -24,7 +24,7 @@ class FirebaseAuthMiddleware
 
             $verifiedIdToken = $auth->verifyIdToken($token);
 
-            // Añadimos los claims del token verificado al request
+            // Add claims to the request
             $request->merge(['firebase_user' => $verifiedIdToken->claims()->all()]);
 
         } catch (FailedToVerifyToken $e) { 

@@ -23,19 +23,21 @@ class AuthController extends Controller
     public function getUser(Request $request)
     {
         try {
-            Log::info('Token recibido en /user:', ['token' => $request->bearerToken()]);
-
-            if (!$request->firebase_user) {
+                if (!$request->firebase_user) {
                 return response()->json(['error' => 'Token no válido o expirado'], 401);
             }
 
-            return response()->json([
+            /*return response()->json([
                 'user' => [
                     'id' => $request->firebase_user['sub'],
                     'email' => $request->firebase_user['email'],
                     'name' => $request->firebase_user['name'] ?? 'Sin nombre',
                     'photo' => $request->firebase_user['picture'] ?? null,
                 ]
+            ]);*/
+
+            return response()->json([
+                'claims' => $request->firebase_user
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Internal server error', 'details' => $e->getMessage()], 500);

@@ -55,18 +55,22 @@ class AuthController extends Controller
             $verifiedIdToken = $this->auth->verifyIdToken($token);
             $firebaseUser = $verifiedIdToken->claims();
 
-            $name = $request->input('name') ?? $firebaseUser->get('name') ?? 'Unknown User';
+            $email = $firebaseUser->get('email');
+            $uid = $firebaseUser->get('sub');
+            $photo = $firebaseUser->get('picture') ?? null;
+            $name = $request->input('name') ?? $firebaseUser->get('name') ?? 'Sin nombre';
 
             $user = User::updateOrCreate(
-                ['email' => $firebaseUser->get('email')],
+                ['email' => $email],
                 [
+                    'firebase_uid' => $uid,
                     'name' => $name,
-                    'firebase_uid' => $firebaseUser->get('sub'),
-                    'photo' => $firebaseUser->get('picture') ?? null
+                    'photo' => $photo,
                 ]
             );
 
             return response()->json(['message' => 'User registered successfully', 'user' => $user]);
+        
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);
         } catch (\Exception $e) {
@@ -81,7 +85,7 @@ class AuthController extends Controller
             if (!$token) {
                 return response()->json(['error' => 'Token no proporcionado'], 401);
             }
-            // 🔹 Verify token with Firebase
+           
             $verifiedIdToken = $this->auth->verifyIdToken($token);
             $firebaseUser = $verifiedIdToken->claims();
 
@@ -103,7 +107,7 @@ class AuthController extends Controller
                     'photo' => $photo
                 ]);
             }
-            
+
             return response()->json(['message' => 'Login successful', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);

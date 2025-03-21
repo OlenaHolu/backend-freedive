@@ -52,15 +52,11 @@ class AuthController extends Controller
                 return response()->json(['error' => 'Token no proporcionado'], 401);
             }
 
-            $auth = (new Factory)
-                ->withServiceAccount(config('firebase.credentials'))
-                ->createAuth();
-            $verifiedIdToken = $auth->verifyIdToken($token);
+            $verifiedIdToken = $this->auth->verifyIdToken($token);
             $firebaseUser = $verifiedIdToken->claims();
 
             $name = $request->input('name') ?? $firebaseUser->get('name') ?? 'Unknown User';
 
-            // 🔹 Guardar usuario en la base de datos con su UID de Firebase
             $user = User::updateOrCreate(
                 ['email' => $firebaseUser->get('email')],
                 [
@@ -69,6 +65,7 @@ class AuthController extends Controller
                     'photo' => $firebaseUser->get('picture') ?? null
                 ]
             );
+
             return response()->json(['message' => 'User registered successfully', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);
@@ -86,24 +83,27 @@ class AuthController extends Controller
             }
             // 🔹 Verify token with Firebase
             $verifiedIdToken = $this->auth->verifyIdToken($token);
-            $firebaseUid = $verifiedIdToken->claims()->get('sub');
-            $firebaseEmail = $verifiedIdToken->claims()->get('email');
+            $firebaseUser = $verifiedIdToken->claims();
 
-            // 🔹 Fetch user info from Firebase
-            $firebaseUser = $this->auth->getUser($firebaseUid);
-            $firebaseDisplayName = $firebaseUser->displayName ?? 'Unknown User';
-            $firebasePhoto = $firebaseUser->photoUrl ?? null;
+            $email = $firebaseUser->get('email');
+            $photo = $firebaseUser->get('picture') ?? null;
 
-    // find user in database
-            $user = User::updateOrCreate(
-                ['email' => $firebaseEmail],
-                [
-                    'name' => $firebaseDisplayName,
-                    'firebase_uid' => $firebaseUid,
-                    'photo' => $firebasePhoto,
-                ]
-            );
+            $user = User::where('email', $email)->first();
 
+            if ($user){
+                if (!$user->photo && $photo) {
+                    $user->photo = $photo;
+                    $user->save();
+                }
+            } else {
+                $user = User::create([
+                    'name' => $firebaseUser->get('name') ?? 'Unknown User',
+                    'email' => $email,
+                    'firebase_uid' => $firebaseUser->get('sub'),
+                    'photo' => $photo
+                ]);
+            }
+            
             return response()->json(['message' => 'Login successful', 'user' => $user]);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid Firebase token'], 401);

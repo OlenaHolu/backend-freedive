@@ -55,13 +55,13 @@ class AuthController extends Controller
             $verifiedIdToken = $auth->verifyIdToken($token);
             $firebaseUser = $verifiedIdToken->claims();
 
+            $name = $request->input('name') ?? $firebaseUser->get('name') ?? 'Unknown User';
+
             // 🔹 Guardar usuario en la base de datos con su UID de Firebase
             $user = User::updateOrCreate(
                 ['email' => $firebaseUser->get('email')],
                 [
-                    'name' => $request->input('name')
-                        ?? $firebaseUser->get('name')
-                        ?? 'Unknown User',
+                    'name' => $name,
                     'firebase_uid' => $firebaseUser->get('sub'),
                     'photo' => $firebaseUser->get('picture') ?? null
                 ]

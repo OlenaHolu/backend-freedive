@@ -6,6 +6,9 @@ use App\Http\Controllers\AuthController;
 //Protected routes
 Route::middleware(['firebase'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
+    Route::post('/dives', [DiveController::class, 'store']);
+    Route::get('/dives', [DiveController::class, 'index']);
+
 });
 
 Route::post('/register', [AuthController::class, 'register']);

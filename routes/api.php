@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DiveController;
 
 //Protected routes
 Route::middleware(['firebase'])->group(function () {

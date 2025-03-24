@@ -12,7 +12,8 @@ return new class extends Migration
     public function up()
 {
     Schema::create('dives', function (Blueprint $table) {
-        $table->id('DiveId');
+        $table->id();
+        $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
         $table->timestamp('StartTime');
         $table->integer('Duration');
@@ -45,8 +46,6 @@ return new class extends Migration
         $table->smallInteger('AscentMode')->default(0);
 
         $table->timestamps();
-
-        $table->foreignId('user_id')->constrained()->onDelete('cascade');
     });
 }
 

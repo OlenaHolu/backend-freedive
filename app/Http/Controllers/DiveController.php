@@ -8,6 +8,29 @@ use Illuminate\Http\Request;
 
 class DiveController extends Controller
 {
+    public function index(Request $request)
+    {
+        try {
+            $user = User::where('email', $request->firebase_user['email'])->first();
+            if (!$user) {
+                return response()->json([
+                    'error' => 'User not found',
+                ], 404);
+            }
+            
+            $dives = Dive::where('user_id', $user->id)->get();
+
+            return response()->json([
+                'message' => 'Dives retrieved successfully ✅',
+                'dives' => $dives,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Internal error',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
     public function store(Request $request)
     {
         $user = User::where('email', $request->firebase_user['email'])->first();

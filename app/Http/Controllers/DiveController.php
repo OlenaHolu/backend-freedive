@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dive;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class DiveController extends Controller
 {
     public function store(Request $request)
     {
-        $user = $request->firebase_user;
+        $user = User::where('email', $request->firebase_user['email'])->first();
 
         $validated = $request->validate([
             'StartTime' => 'required|date',
@@ -22,7 +23,7 @@ class DiveController extends Controller
         ]);
 
         $dive = Dive::create([
-            'user_id' => $user()->id(),
+            'user_id' => $user->id,
             'StartTime' => $validated['StartTime'],
             'Duration' => $validated['Duration'],
             'Mode' => 3,

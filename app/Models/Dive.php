@@ -24,6 +24,7 @@ protected $fillable = [
     'BottomTemperature',
     'EndTemperature',
     'PreviousMaxDepth',
+    'Mode'
 ];
 
 

@@ -17,7 +17,7 @@ class DiveController extends Controller
                     'error' => 'User not found',
                 ], 404);
             }
-            
+
             $dives = Dive::where('user_id', $user->id)->get();
 
             return response()->json([
@@ -31,6 +31,7 @@ class DiveController extends Controller
             ], 500);
         }
     }
+
     public function store(Request $request)
     {
         $user = User::where('email', $request->firebase_user['email'])->first();
@@ -60,6 +61,49 @@ class DiveController extends Controller
         return response()->json([
             'message' => 'Dive saved successfully ✅',
             'dive' => $dive,
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::where('email', $request->firebase_user['email'])->first();
+
+        $validated = $request->validate([
+            'StartTime' => 'required|date',
+            'Duration' => 'required|integer',
+            'MaxDepth' => 'required|numeric',
+            'StartTemperature' => 'nullable|numeric',
+            'BottomTemperature' => 'nullable|numeric',
+            'EndTemperature' => 'nullable|numeric',
+            'PreviousMaxDepth' => 'nullable|numeric',
+        ]);
+
+        $dive = Dive::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $dive->update(array_merge($validated, [
+            'Mode' => $validated['Mode'] ?? 3, // Freedive por defecto
+        ]));
+
+        return response()->json([
+            'message' => 'Dive updated successfully ✅',
+            'dive' => $dive,
+        ]);
+    }
+
+    public function destroy(Request $request, Dive $dive)
+    {
+        if ($dive->user_id !== $request->firebase_user['sub']) {
+            return response()->json([
+                'error' => 'Unauthorized',
+            ], 401);
+        }
+
+        $dive->delete();
+
+        return response()->json([
+            'message' => 'Dive deleted successfully ✅',
         ]);
     }
 }

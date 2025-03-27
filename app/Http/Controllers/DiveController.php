@@ -106,4 +106,74 @@ class DiveController extends Controller
             'message' => 'Dive deleted successfully ✅',
         ]);
     }
+
+    public function storeBulk(Request $request)
+    {
+        $user = User::where('email', $request->firebase_user['email'])->first();
+
+        if (!$user) {
+            return response()->json([
+                'error' => 'User not found',
+            ], 404);
+        }
+
+        $divesData = $request->all();
+        $saved = [];
+
+        foreach ($divesData as $diveData) {
+            // Validaciones mínimas por inmersión
+            if (!isset($diveData['StartTime'], $diveData['Duration'], $diveData['MaxDepth'])) {
+                continue; // salta este dive si faltan datos requeridos
+            }
+
+            $dive = new Dive();
+            $dive->user_id = $user->id;
+            $dive->StartTime = $diveData['StartTime'];
+            $dive->Duration = $diveData['Duration'];
+            $dive->MaxDepth = $diveData['MaxDepth'];
+            $dive->AvgDepth = $diveData['AvgDepth'] ?? null;
+            $dive->Source = $diveData['Source'] ?? null;
+            $dive->Note = $diveData['Note'] ?? null;
+            $dive->SampleInterval = $diveData['SampleInterval'] ?? null;
+            $dive->AltitudeMode = $diveData['AltitudeMode'] ?? null;
+            $dive->PersonalMode = $diveData['PersonalMode'] ?? null;
+            $dive->DiveNumberInSerie = $diveData['DiveNumberInSerie'] ?? null;
+            $dive->SurfaceTime = $diveData['SurfaceTime'] ?? null;
+            $dive->SurfacePressure = $diveData['SurfacePressure'] ?? null;
+            $dive->DiveTime = $diveData['DiveTime'] ?? null;
+            $dive->Deleted = $diveData['Deleted'] ?? false;
+            $dive->Weight = $diveData['Weight'] ?? null;
+            $dive->Weather = $diveData['Weather'] ?? null;
+            $dive->Visibility = $diveData['Visibility'] ?? null;
+            $dive->Software = $diveData['Software'] ?? null;
+            $dive->SerialNumber = $diveData['SerialNumber'] ?? '';
+            $dive->TimeFromReset = $diveData['TimeFromReset'] ?? null;
+            $dive->Battery = $diveData['Battery'] ?? null;
+            $dive->LastDecoStopDepth = $diveData['LastDecoStopDepth'] ?? 3.0;
+            $dive->AscentMode = $diveData['AscentMode'] ?? 0;
+            $dive->Mode = $diveData['Mode'] ?? 3; // Freedive por defecto
+            $dive->StartTemperature = $diveData['StartTemperature'] ?? 0;
+            $dive->BottomTemperature = $diveData['BottomTemperature'] ?? 0;
+            $dive->EndTemperature = $diveData['EndTemperature'] ?? 0;
+            $dive->PreviousMaxDepth = $diveData['PreviousMaxDepth'] ?? null;
+            $dive->save();
+
+            if (!empty($diveData['samples'])) {
+                foreach ($diveData['samples'] as $sample){
+                    $dive->samples()->create([
+                        'time' => $sample['time'],
+                        'depth' => $sample['depth'] ?? null,
+                        'temperature' => $sample['temperature'] ?? null,
+                    ]);
+                }
+            }
+
+            $saved[] = $dive;
+        }
+
+        return response()->json([
+            'message' => 'Dives saved successfully ✅',
+            'saved' => count($saved),
+        ]);
+    }
 }

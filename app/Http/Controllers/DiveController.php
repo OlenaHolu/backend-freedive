@@ -18,9 +18,7 @@ class DiveController extends Controller
                 ], 404);
             }
 
-            $dives = Dive::with('samples')
-                ->where('user_id', $user->id)
-                ->get();
+            $dives = Dive::where('user_id', $user->id)->get();
 
             return response()->json([
                 'message' => 'Dives retrieved successfully ✅',
@@ -178,4 +176,19 @@ class DiveController extends Controller
             'saved' => count($saved),
         ]);
     }
+
+    public function show(Request $request, $id)
+{
+    $user = User::where('email', $request->firebase_user['email'])->first();
+
+    $dive = Dive::with('samples')
+        ->where('user_id', $user->id)
+        ->findOrFail($id);
+
+    return response()->json([
+        'message' => 'Dive loaded successfully ✅',
+        'dive' => $dive,
+    ]);
+}
+
 }

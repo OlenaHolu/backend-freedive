@@ -18,7 +18,9 @@ class DiveController extends Controller
                 ], 404);
             }
 
-            $dives = Dive::where('user_id', $user->id)->get();
+            $dives = Dive::with('samples')
+                ->where('user_id', $user->id)
+                ->get();
 
             return response()->json([
                 'message' => 'Dives retrieved successfully ✅',

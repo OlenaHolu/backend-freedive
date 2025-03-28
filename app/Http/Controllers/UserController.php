@@ -10,47 +10,29 @@ class UserController extends Controller
 {
     public function update(Request $request)
     {
-        $claims = $request->firebase_user ?? null;
-
-        if (!$claims || !isset($claims['email'])) {
-            return response()->json(['error' => 'Token no válido'], 401);
-        }
-
-        $user = User::where('email', $claims['email'])->first();
-
+        $request->validate([
+            'name' => 'nullable|string|max:255',
+            'avatar_url' => 'nullable|url'
+        ]);
+    
+        $firebaseUser = $request->firebase_user;
+    
+        $user = User::where('email', $firebaseUser['email'])->first();
         if (!$user) {
             return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
-
-        // ✅ Validación elegante
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'photo' => 'nullable|string',
-            // puedes agregar más campos aquí
-            // 'bio' => 'nullable|string|max:500',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => 'Datos inválidos', 'details' => $validator->errors()], 422);
+    
+        if ($request->has('name')) {
+            $user->name = $request->input('name');
         }
-
-        // ✅ Asignación controlada
-        $user->name = $request->input('name');
-
-        if ($request->filled('photo')) {
-            $user->photo = $request->input('photo');
+    
+        if ($request->has('avatar_url')) {
+            $user->photo = $request->input('avatar_url');
         }
-
+    
         $user->save();
-
-        return response()->json([
-            'message' => 'Perfil actualizado correctamente',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'photo' => $user->photo,
-            ]
-        ]);
+    
+        return response()->json(['message' => 'Perfil actualizado', 'user' => $user]);
     }
+    
 }

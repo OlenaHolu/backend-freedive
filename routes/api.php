@@ -4,11 +4,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DiveController;
+use App\Http\Controllers\UserController;
 
 //Protected routes
 Route::middleware(['firebase'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
-    Route::post('/user/update', [AuthController::class, 'update']);
+    Route::post('/user/update', [UserController::class, 'update']);
 
 
 

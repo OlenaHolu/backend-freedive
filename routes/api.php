@@ -1,67 +1,31 @@
 <?php
 
-namespace App\Http\Controllers;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DiveController;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Models\User;
+//Protected routes
+Route::middleware(['firebase'])->group(function () {
+    Route::get('/user', [AuthController::class, 'getUser']);
+    Route::post('/user/update', [AuthController::class, 'update']);
 
-class UserController extends Controller
-{
-    public function update(Request $request)
-    {
-        $claims = $request->firebase_user ?? null;
 
-        if (!$claims || !isset($claims['email'])) {
-            return response()->json(['error' => 'Token no válido'], 401);
-        }
 
-        $user = User::where('email', $claims['email'])->first();
+    Route::post('/dives', [DiveController::class, 'store']);
+    Route::post('/dives/bulk', [DiveController::class, 'storeBulk']);
+    Route::get('/dives', [DiveController::class, 'index']);
+    Route::get('/dives/{id}', [DiveController::class, 'show']);
+    Route::put('/dives/{id}', [DiveController::class, 'update']);
+    Route::delete('/dives/{id}', [DiveController::class, 'destroy']);
 
-        if (!$user) {
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
-        }
+});
 
-        // ✅ Validación
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'photo' => ['nullable', 'string', function ($attribute, $value, $fail) {
-                // Solo si viene photo
-                if (!preg_match('/^data:image\/(png|jpeg|jpg);base64,/', $value)) {
-                    return $fail('El avatar debe ser una imagen válida en base64.');
-                }
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/contact', [ContactController::class, 'send']);
 
-                // Validar tamaño estimado (base64 → ~1.33x el tamaño real)
-                $base64Str = substr($value, strpos($value, ',') + 1);
-                $byteLength = strlen(base64_decode($base64Str, true));
+Route::get('/', function () {
+    return view('welcome');
+});
 
-                if ($byteLength > 1024 * 1024) { // 1MB
-                    return $fail('La imagen no debe exceder 1MB.');
-                }
-            }],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => 'Datos inválidos', 'details' => $validator->errors()], 422);
-        }
-
-        // ✅ Asignación segura
-        $user->name = $request->input('name');
-
-        if ($request->filled('photo')) {
-            $user->photo = $request->input('photo');
-        }
-
-        $user->save();
-
-        return response()->json([
-            'message' => 'Perfil actualizado correctamente',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'photo' => $user->photo,
-            ]
-        ]);
-    }
-}

@@ -22,30 +22,19 @@ class UserController extends Controller
             return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
 
-        // ✅ Validación
+        // ✅ Validación elegante
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'photo' => ['nullable', 'string', function ($attribute, $value, $fail) {
-                // Solo si viene photo
-                if (!preg_match('/^data:image\/(png|jpeg|jpg);base64,/', $value)) {
-                    return $fail('El avatar debe ser una imagen válida en base64.');
-                }
-
-                // Validar tamaño estimado (base64 → ~1.33x el tamaño real)
-                $base64Str = substr($value, strpos($value, ',') + 1);
-                $byteLength = strlen(base64_decode($base64Str, true));
-
-                if ($byteLength > 1024 * 1024) { // 1MB
-                    return $fail('La imagen no debe exceder 1MB.');
-                }
-            }],
+            'photo' => 'nullable|string',
+            // puedes agregar más campos aquí
+            // 'bio' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => 'Datos inválidos', 'details' => $validator->errors()], 422);
         }
 
-        // ✅ Asignación segura
+        // ✅ Asignación controlada
         $user->name = $request->input('name');
 
         if ($request->filled('photo')) {

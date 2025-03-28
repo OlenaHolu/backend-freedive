@@ -114,36 +114,4 @@ class AuthController extends Controller
         }
     }
 
-    public function updateAvatar(Request $request)
-{
-    try {
-        $token = $request->input('firebase_token');
-        if (!$token) {
-            return response()->json(['error' => 'Token no proporcionado'], 401);
-        }
-
-        $verifiedIdToken = $this->auth->verifyIdToken($token);
-        $firebaseUser = $verifiedIdToken->claims();
-        $email = $firebaseUser->get('email');
-
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
-        }
-
-        $request->validate([
-            'image' => 'required|string'
-        ]);
-
-        $user->photo = $request->image;
-        $user->save();
-
-        return response()->json(['message' => 'Avatar actualizado']);
-    } catch (FailedToVerifyToken $e) {
-        return response()->json(['error' => 'Firebase token inválido'], 401);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Error interno', 'details' => $e->getMessage()], 500);
-    }
-}
-
 }

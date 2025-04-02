@@ -10,9 +10,8 @@ use App\Http\Controllers\UserController;
 Route::middleware(['firebase'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
     Route::post('/user/update', [UserController::class, 'update']);
-
-
-
+    Route::delete('/user/delete', [UserController::class, 'destroy']);
+    
     Route::post('/dives', [DiveController::class, 'store']);
     Route::post('/dives/bulk', [DiveController::class, 'storeBulk']);
     Route::get('/dives', [DiveController::class, 'index']);

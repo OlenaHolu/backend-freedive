@@ -95,7 +95,9 @@ class DiveController extends Controller
 
     public function destroy(Request $request, Dive $dive)
     {
-        if ($dive->user_id !== $request->firebase_user['sub']) {
+        $user = User::where('firebase_uid', $request->firebase_user['sub'])->firstOrFail();
+
+        if ($dive->user_id !== $user->id) {
             return response()->json([
                 'error' => 'Unauthorized',
             ], 401);

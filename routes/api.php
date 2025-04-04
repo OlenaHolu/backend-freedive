@@ -18,7 +18,6 @@ Route::middleware(['firebase'])->group(function () {
     Route::get('/dives/{id}', [DiveController::class, 'show']);
     Route::put('/dives/{id}', [DiveController::class, 'update']);
     Route::delete('/dives/{id}', [DiveController::class, 'destroy']);
-
 });
 
 Route::post('/register', [AuthController::class, 'register']);

@@ -97,6 +97,11 @@ class DiveController extends Controller
     {
         $user = User::where('firebase_uid', $request->firebase_user['sub'])->firstOrFail();
 
+        dd([
+            'dive_user_id' => $dive->user_id,
+            'requesting_user_id' => $user->id,
+        ]);
+        
         if ($dive->user_id !== $user->id) {
             return response()->json([
                 'error' => 'Unauthorized',

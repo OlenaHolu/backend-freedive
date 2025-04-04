@@ -183,7 +183,7 @@ class DiveController extends Controller
             }
     
             if (!empty($samplesToInsert)) {
-                DB::table('samples')->insert($samplesToInsert);
+                DB::table('dive_samples')->insert($samplesToInsert);
             }
     
             DB::commit();

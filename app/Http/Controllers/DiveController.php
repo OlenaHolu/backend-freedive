@@ -95,7 +95,7 @@ class DiveController extends Controller
 
     public function destroy(Request $request, Dive $dive)
     {
-        $user = User::where('firebase_uid', $request->firebase_user['sub'])->firstOrFail();
+        $user = User::where('email', $request->firebase_user['email'])->first();
 
         if ($dive->user_id !== $user->id) {
             return response()->json([

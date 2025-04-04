@@ -13,7 +13,7 @@ Route::middleware(['firebase'])->group(function () {
     Route::delete('/user/delete', [UserController::class, 'destroy']);
     
     Route::post('/dives', [DiveController::class, 'store']);
-    Route::post('/dives/bulk', [DiveController::class, 'storeBulk']);
+    Route::post('/dives/bulk', [DiveController::class, 'storeMany']);
     Route::get('/dives', [DiveController::class, 'index']);
     Route::get('/dives/{id}', [DiveController::class, 'show']);
     Route::put('/dives/{id}', [DiveController::class, 'update']);

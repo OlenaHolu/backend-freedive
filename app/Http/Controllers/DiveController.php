@@ -93,7 +93,7 @@ class DiveController extends Controller
         ]);
     }
 
-    public function storeBulk(Request $request)
+    public function storeMany(Request $request)
 {
     $user = User::where('email', $request->firebase_user['email'])->first();
 

@@ -222,4 +222,36 @@ class DiveController extends Controller
     }
 }
 
+public function destroyMany(Request $request)
+{
+    try {
+        $user = User::where('email', $request->firebase_user['email'])->first();
+
+        if (!$user) {
+            return response()->json([
+                'error' => 'User not found',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = Dive::where('user_id', $user->id)
+            ->whereIn('id', $validated['ids'])
+            ->delete();
+
+        return response()->json([
+            'message' => 'Dives deleted successfully ✅',
+            'deleted' => $deleted,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to delete dives ❌',
+            'details' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 }

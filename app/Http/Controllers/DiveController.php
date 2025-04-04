@@ -93,113 +93,75 @@ class DiveController extends Controller
         ]);
     }
 
-    public function storeMany(Request $request)
-    {
-        $user = User::where('email', $request->firebase_user['email'])->first();
-    
-        if (!$user) {
-            return response()->json([
-                'error' => 'User not found',
-            ], 404);
-        }
-    
-        $divesData = $request->all();
-    
-        DB::beginTransaction();
-    
-        try {
-            $now = now();
-            $divesToInsert = [];
-            $samplesToInsert = [];
-    
-            foreach ($divesData as $diveData) {
-                // Validaciones mínimas por inmersión
-                if (!isset($diveData['StartTime'], $diveData['Duration'], $diveData['MaxDepth'])) {
-                    continue;
-                }
-    
-                $divesToInsert[] = [
-                    'user_id' => $user->id,
-                    'StartTime' => $diveData['StartTime'],
-                    'Duration' => $diveData['Duration'],
-                    'MaxDepth' => $diveData['MaxDepth'],
-                    'AvgDepth' => $diveData['AvgDepth'] ?? null,
-                    'Source' => $diveData['Source'] ?? null,
-                    'Note' => $diveData['Note'] ?? null,
-                    'SampleInterval' => $diveData['SampleInterval'] ?? null,
-                    'AltitudeMode' => $diveData['AltitudeMode'] ?? null,
-                    'PersonalMode' => $diveData['PersonalMode'] ?? null,
-                    'DiveNumberInSerie' => $diveData['DiveNumberInSerie'] ?? null,
-                    'SurfaceTime' => $diveData['SurfaceTime'] ?? null,
-                    'SurfacePressure' => $diveData['SurfacePressure'] ?? null,
-                    'DiveTime' => $diveData['DiveTime'] ?? null,
-                    'Deleted' => $diveData['Deleted'] ?? false,
-                    'Weight' => $diveData['Weight'] ?? null,
-                    'Weather' => $diveData['Weather'] ?? null,
-                    'Visibility' => $diveData['Visibility'] ?? null,
-                    'Software' => $diveData['Software'] ?? null,
-                    'SerialNumber' => $diveData['SerialNumber'] ?? '',
-                    'TimeFromReset' => $diveData['TimeFromReset'] ?? null,
-                    'Battery' => $diveData['Battery'] ?? null,
-                    'LastDecoStopDepth' => $diveData['LastDecoStopDepth'] ?? 3.0,
-                    'AscentMode' => $diveData['AscentMode'] ?? 0,
-                    'Mode' => $diveData['Mode'] ?? 3,
-                    'StartTemperature' => $diveData['StartTemperature'] ?? 0,
-                    'BottomTemperature' => $diveData['BottomTemperature'] ?? 0,
-                    'EndTemperature' => $diveData['EndTemperature'] ?? 0,
-                    'PreviousMaxDepth' => $diveData['PreviousMaxDepth'] ?? null,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
-    
-            // Insertar inmersiones y recuperar IDs
-            $chunked = array_chunk($divesToInsert, 1000); // por si hay muchas
-            $insertedDiveIds = [];
-    
-            foreach ($chunked as $chunk) {
-                $firstIdBefore = DB::table('dives')->max('id');
-                DB::table('dives')->insert($chunk);
-                $lastIdAfter = DB::table('dives')->max('id');
-                for ($i = $firstIdBefore + 1; $i <= $lastIdAfter; $i++) {
-                    $insertedDiveIds[] = $i;
-                }
-            }
-    
-            // Asignar samples si vienen (opcional)
-            foreach ($divesData as $index => $diveData) {
-                if (!empty($diveData['samples']) && isset($insertedDiveIds[$index])) {
-                    foreach ($diveData['samples'] as $sample) {
-                        $samplesToInsert[] = [
-                            'dive_id' => $insertedDiveIds[$index],
-                            'time' => $sample['time'],
-                            'depth' => $sample['depth'] ?? null,
-                            'temperature' => $sample['temperature'] ?? null,
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ];
-                    }
-                }
-            }
-    
-            if (!empty($samplesToInsert)) {
-                DB::table('dive_samples')->insert($samplesToInsert);
-            }
-    
-            DB::commit();
-    
-            return response()->json([
-                'message' => 'Dives saved successfully ✅',
-                'saved' => count($divesToInsert),
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'error' => 'Failed to save dives ❌',
-                'details' => $e->getMessage(),
-            ], 500);
-        }
+    public function storeBulk(Request $request)
+{
+    $user = User::where('email', $request->firebase_user['email'])->first();
+
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
     }
+
+    $divesData = $request->all();
+    $divesToInsert = [];
+    $samplesToInsert = [];
+
+    DB::beginTransaction();
+
+    try {
+        foreach ($divesData as $diveData) {
+            // Validaciones mínimas
+            if (!isset($diveData['StartTime'], $diveData['Duration'], $diveData['MaxDepth'])) {
+                continue;
+            }
+
+            $dive = new Dive();
+            $dive->user_id = $user->id;
+            $dive->StartTime = $diveData['StartTime'];
+            $dive->Duration = $diveData['Duration'];
+            $dive->MaxDepth = $diveData['MaxDepth'];
+            $dive->AvgDepth = $diveData['AvgDepth'] ?? null;
+            $dive->Note = $diveData['Note'] ?? null;
+            $dive->Mode = $diveData['Mode'] ?? 3;
+            $dive->StartTemperature = $diveData['StartTemperature'] ?? 0;
+            $dive->BottomTemperature = $diveData['BottomTemperature'] ?? 0;
+            $dive->EndTemperature = $diveData['EndTemperature'] ?? 0;
+            $dive->PreviousMaxDepth = $diveData['PreviousMaxDepth'] ?? null;
+            $dive->save(); // 👈 Aquí obtenemos el ID
+
+            // Agregamos samples con ese ID
+            if (!empty($diveData['samples'])) {
+                foreach ($diveData['samples'] as $sample) {
+                    $samplesToInsert[] = [
+                        'dive_id' => $dive->id,
+                        'time' => $sample['time'],
+                        'depth' => $sample['depth'] ?? null,
+                        'temperature' => $sample['temperature'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+        }
+
+        if (!empty($samplesToInsert)) {
+            DB::table('dive_samples')->insert($samplesToInsert);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Dives saved successfully ✅',
+            'saved' => count($divesData),
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'error' => 'Failed to save dives ❌',
+            'details' => $e->getMessage(),
+        ], 500);
+    }
+}
+
     
     public function show(Request $request, $id)
     {

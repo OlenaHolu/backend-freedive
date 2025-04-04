@@ -93,23 +93,6 @@ class DiveController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, Dive $dive)
-    {
-        $user = User::where('email', $request->firebase_user['email'])->first();
-
-        if ($dive->user_id !== $user->id) {
-            return response()->json([
-                'error' => 'Unauthorized',
-            ], 401);
-        }
-
-        $dive->delete();
-
-        return response()->json([
-            'message' => 'Dive deleted successfully ✅',
-        ]);
-    }
-
     public function storeBulk(Request $request)
     {
         $user = User::where('email', $request->firebase_user['email'])->first();
@@ -204,4 +187,39 @@ class DiveController extends Controller
             'dive' => $dive,
         ]);
     }
+
+    public function destroy(Request $request, $id)
+{
+    try {
+        $user = User::where('email', $request->firebase_user['email'])->first();
+
+        if (!$user) {
+            return response()->json([
+                'error' => 'User not found',
+            ], 404);
+        }
+
+        $dive = Dive::where('id', $id)
+                    ->where('user_id', $user->id)
+                    ->first();
+
+        if (!$dive) {
+            return response()->json([
+                'error' => 'Dive not found or does not belong to the user',
+            ], 404);
+        }
+
+        $dive->delete();
+
+        return response()->json([
+            'message' => 'Dive deleted successfully ✅',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to delete dive ❌',
+            'details' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 }

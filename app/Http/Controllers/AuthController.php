@@ -24,7 +24,10 @@ class AuthController extends Controller
     {
         try {
             if (!$request->firebase_user) {
-                return response()->json(['error' => 'Token no válido o expirado'], 401);
+                return response()->json([
+                    'errorCode' => 1401,
+                    'error' => 'Invalid or expired token',
+                ], 401);
             }
 
             $claims = $request->firebase_user;
@@ -34,12 +37,17 @@ class AuthController extends Controller
                 'user' => [
                     'id' => $claims['sub'],
                     'email' => $claims['email'],
-                    'name' => $user->name ?? $claims['name'] ?? 'Unknown User',
+                    'name' => $user->name ?? $claims['name'] ?? 'Freedive Analyzer User',
                     'photo' => $user->photo ?? $claims['picture'] ?? null
                 ]
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Internal server error', 'details' => $e->getMessage()], 500);
+            Log::error('Error fetching user: ' . $e->getMessage());
+
+            return response()->json([
+                'errorCode' => 1000,
+                'error' => 'Internal server error'
+            ], 500);
         }
     }
 
@@ -48,7 +56,10 @@ class AuthController extends Controller
         try {
             $token = $request->input('firebase_token');
             if (!$token) {
-                return response()->json(['error' => 'Token no proporcionado'], 401);
+                return response()->json([
+                    'errorCode' => 1101,
+                    'error' => 'Token not provided',
+                ], 401);
             }
 
             $verifiedIdToken = $this->auth->verifyIdToken($token);
@@ -57,7 +68,7 @@ class AuthController extends Controller
             $email = $firebaseUser->get('email');
             $uid = $firebaseUser->get('sub');
             $photo = $firebaseUser->get('picture') ?? null;
-            $name = $request->input('name') ?? $firebaseUser->get('name') ?? 'Sin nombre';
+            $name = $request->input('name') ?? $firebaseUser->get('name') ?? 'Freedive Analyzer User';
 
             $user = User::updateOrCreate(
                 ['email' => $email],
@@ -68,11 +79,22 @@ class AuthController extends Controller
                 ]
             );
 
-            return response()->json(['message' => 'User registered successfully', 'user' => $user]);
+            return response()->json([
+                'message' => 'User registered successfully', 
+                'user' => $user
+            ]);
         } catch (FailedToVerifyToken $e) {
-            return response()->json(['error' => 'Invalid Firebase token'], 401);
+            return response()->json([
+                'errorCode' => 1401,
+                'error' => 'Invalid Firebase token'
+            ], 401);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error interno', 'details' => $e->getMessage()], 500);
+            Log::error('Error registering user: ' . $e->getMessage());
+
+            return response()->json([
+                'errorCode' => 1000,
+                'error' => 'Internal server error'
+            ], 500);
         }
     }
 
@@ -81,7 +103,10 @@ class AuthController extends Controller
         try {
             $token = $request->input('firebase_token');
             if (!$token) {
-                return response()->json(['error' => 'Token no proporcionado'], 401);
+                return response()->json([
+                    'errorCode' => 1101,
+                    'error' => 'Token not provided',
+                ], 401);
             }
 
             $verifiedIdToken = $this->auth->verifyIdToken($token);
@@ -99,18 +124,29 @@ class AuthController extends Controller
                 }
             } else {
                 $user = User::create([
-                    'name' => $firebaseUser->get('name') ?? 'Unknown User',
+                    'name' => $firebaseUser->get('name') ?? 'Freedive Analyzer User',
                     'email' => $email,
                     'firebase_uid' => $firebaseUser->get('sub'),
                     'photo' => $photo
                 ]);
             }
 
-            return response()->json(['message' => 'Login successful', 'user' => $user]);
+            return response()->json([
+                'message' => 'Login successful', 
+                'user' => $user
+            ]);
         } catch (FailedToVerifyToken $e) {
-            return response()->json(['error' => 'Invalid Firebase token'], 401);
+            return response()->json([
+                'errorCode' => 1401,
+                'error' => 'Invalid Firebase token'
+            ], 401);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Internal error', 'details' => $e->getMessage()], 500);
+            Log::error('Error logging in user: ' . $e->getMessage());
+            
+            return response()->json([
+                'errorCode' => 1000,
+                'error' => 'Internal server error'
+            ], 500);
         }
     }
 

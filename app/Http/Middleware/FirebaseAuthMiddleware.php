@@ -14,7 +14,10 @@ class FirebaseAuthMiddleware
     {
         $token = $request->bearerToken();
         if (!$token) {
-            return response()->json(['error' => 'Token not provided'], 401);
+            return response()->json([
+                'errorCode' => 1101,
+                'error' => 'Token not provided'
+            ], 401);
         }
 
         try {
@@ -28,7 +31,15 @@ class FirebaseAuthMiddleware
             $request->merge(['firebase_user' => $verifiedIdToken->claims()->all()]);
 
         } catch (FailedToVerifyToken $e) { 
-            return response()->json(['error' => 'Invalid Firebase token'], 401);
+            return response()->json([
+                'errorCode' => 1401,
+                'error' => 'Invalid Firebase token'
+            ], 401);
+        } catch (\Exception $e) {
+            return response()->json([
+                'errorCode' => 1000,
+                'error' => 'Internal server error'
+            ], 500);
         }
 
         return $next($request);

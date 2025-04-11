@@ -6,13 +6,14 @@ use App\Models\Dive;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class DiveController extends Controller
 {
     public function index(Request $request)
     {
         try {
-            $user = User::where('email', $request->firebase_user['email'])->first();
+            $user = Auth::user();
             if (!$user) {
                 return response()->json([
                     'error' => 'User not found',
@@ -35,7 +36,7 @@ class DiveController extends Controller
 
     public function store(Request $request)
     {
-        $user = User::where('email', $request->firebase_user['email'])->first();
+        $user = Auth::user();
 
         $validated = $request->validate([
             'StartTime' => 'required|date',
@@ -67,7 +68,7 @@ class DiveController extends Controller
 
     public function update(Request $request, $id)
     {
-        $user = User::where('email', $request->firebase_user['email'])->first();
+        $user = Auth::user();
 
         $validated = $request->validate([
             'StartTime' => 'required|date',
@@ -95,14 +96,13 @@ class DiveController extends Controller
 
     public function storeMany(Request $request)
 {
-    $user = User::where('email', $request->firebase_user['email'])->first();
+    $user = Auth::user();
 
     if (!$user) {
         return response()->json(['error' => 'User not found'], 404);
     }
 
     $divesData = $request->all();
-    $divesToInsert = [];
     $samplesToInsert = [];
 
     DB::beginTransaction();
@@ -165,7 +165,7 @@ class DiveController extends Controller
     
     public function show(Request $request, $id)
     {
-        $user = User::where('email', $request->firebase_user['email'])->first();
+        $user = Auth::user();
 
         $dive = Dive::with('samples')
             ->where('user_id', $user->id)
@@ -180,7 +180,7 @@ class DiveController extends Controller
     public function destroy(Request $request, $id)
 {
     try {
-        $user = User::where('email', $request->firebase_user['email'])->first();
+        $user = Auth::user();
 
         if (!$user) {
             return response()->json([
@@ -214,7 +214,7 @@ class DiveController extends Controller
 public function destroyMany(Request $request)
 {
     try {
-        $user = User::where('email', $request->firebase_user['email'])->first();
+        $user = Auth::user();
 
         if (!$user) {
             return response()->json([

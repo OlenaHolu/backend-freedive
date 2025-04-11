@@ -29,17 +29,18 @@ This table documents all the custom error codes used to safely and clearly commu
 |-------|--------------------------|-------------------------------------------|
 | 1501  | User not registered      | Email not found in the database           |
 | 1502  | Incomplete data          | Missing required fields during registration |
+| 1503  | Invalid credentials    | Incorrect email or password               |
 
 ---
 
-## 🔄 Firebase Errors (1400–1499)
+## 🔄 Auth Errors (1400–1499)
 
 | Code  | Message                         | Description                               |
 |-------|----------------------------------|-------------------------------------------|
 | 1401  | Invalid Firebase token           | Firebase couldn't verify the token        |
-| 1402  | Firebase authentication error    | Problem during login with Firebase        |
+| 1402  | Firebase authentication error    | Problem during login with Google in Firebase        |
 | 1403  | Firebase: invalid email          | Email format is invalid (Firebase error)  |
-| 1404  | Firebase: invalid credentials    | Incorrect email or password               |
+| 1405  | Firebase: email already in use    | Email already in use               |
 | 1406  | Failed to delete user in Firabase    | Unexpected Firebase-related deletion failure               |
 
 ---

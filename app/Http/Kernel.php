@@ -66,8 +66,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
     ];
 
-    protected $routeMiddleware = [
-        'firebase' => \App\Http\Middleware\FirebaseAuthMiddleware::class,
-    ];
+   
     
 }

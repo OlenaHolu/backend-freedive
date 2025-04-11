@@ -2,152 +2,108 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
-use Kreait\Firebase\Factory;
-use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use App\Models\User;
-
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
-    protected $auth;
-
-    public function __construct()
-    {
-        $this->auth = (new Factory)
-            ->withServiceAccount(config('firebase.credentials'))
-            ->createAuth();
-    }
-
-    public function getUser(Request $request)
-    {
-        try {
-            if (!$request->firebase_user) {
-                return response()->json([
-                    'errorCode' => 1401,
-                    'error' => 'Invalid or expired token',
-                ], 401);
-            }
-
-            $claims = $request->firebase_user;
-            $user = User::where('email', $claims['email'])->first();
-
-            return response()->json([
-                'user' => [
-                    'id' => $claims['sub'],
-                    'email' => $claims['email'],
-                    'name' => $user->name ?? $claims['name'] ?? 'Freedive Analyzer User',
-                    'photo' => $user->photo ?? $claims['picture'] ?? null
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error fetching user: ' . $e->getMessage());
-
-            return response()->json([
-                'errorCode' => 1000,
-                'error' => 'Internal server error'
-            ], 500);
-        }
-    }
-
     public function register(Request $request)
     {
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
         try {
-            $token = $request->input('firebase_token');
-            if (!$token) {
-                return response()->json([
-                    'errorCode' => 1101,
-                    'error' => 'Token not provided',
-                ], 401);
-            }
-
-            $verifiedIdToken = $this->auth->verifyIdToken($token);
-            $firebaseUser = $verifiedIdToken->claims();
-
-            $email = $firebaseUser->get('email');
-            $uid = $firebaseUser->get('sub');
-            $photo = $firebaseUser->get('picture') ?? null;
-            $name = $request->input('name') ?? $firebaseUser->get('name') ?? 'Freedive Analyzer User';
-
-            $user = User::updateOrCreate(
-                ['email' => $email],
-                [
-                    'firebase_uid' => $uid,
-                    'name' => $name,
-                    'photo' => $photo,
-                ]
-            );
-
-            return response()->json([
-                'message' => 'User registered successfully', 
-                'user' => $user
+            $user = User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
             ]);
-        } catch (FailedToVerifyToken $e) {
+
+            $token = Auth::guard('api')->login($user);
+
             return response()->json([
-                'errorCode' => 1401,
-                'error' => 'Invalid Firebase token'
-            ], 401);
+                'message' => 'User registered successfully',
+                'user'    => $user,
+                'token'   => $token,
+            ]);
         } catch (\Exception $e) {
-            Log::error('Error registering user: ' . $e->getMessage());
+            Log::error('Register error: ' . $e->getMessage());
 
             return response()->json([
                 'errorCode' => 1000,
-                'error' => 'Internal server error'
+                'error'     => 'Internal server error',
             ], 500);
         }
     }
 
     public function login(Request $request)
     {
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        if (!$token = Auth::attempt($credentials)) {
+            return response()->json([
+                'errorCode' => 1503,
+                'error'     => 'Invalid credentials',
+            ], 401);
+        }
+
+        return response()->json([
+            'message' => 'Login successful',
+            'user'    => Auth::user(),
+            'token'   => $token,
+        ]);
+    }
+
+    public function me()
+    {
+        return response()->json([
+            'user' => Auth::user()
+        ]);
+    }
+    
+
+    public function logout()
+    {
+        Auth::logout();
+
+        return response()->json([
+            'message' => 'Successfully logged out',
+        ]);
+    }
+
+    public function refresh()
+    {
         try {
-            $token = $request->input('firebase_token');
-            if (!$token) {
+            $refreshToken = JWTAuth::getToken();
+
+            if ($refreshToken) {
+                $token = JWTAuth::refresh($refreshToken);
                 return response()->json([
-                    'errorCode' => 1101,
-                    'error' => 'Token not provided',
-                ], 401);
-            }
-
-            $verifiedIdToken = $this->auth->verifyIdToken($token);
-            $firebaseUser = $verifiedIdToken->claims();
-
-            $email = $firebaseUser->get('email');
-            $photo = $firebaseUser->get('picture') ?? null;
-
-            $user = User::where('email', $email)->first();
-
-            if ($user) {
-                if (!$user->photo && $photo) {
-                    $user->photo = $photo;
-                    $user->save();
-                }
-            } else {
-                $user = User::create([
-                    'name' => $firebaseUser->get('name') ?? 'Freedive Analyzer User',
-                    'email' => $email,
-                    'firebase_uid' => $firebaseUser->get('sub'),
-                    'photo' => $photo
+                    'token' => $token,
                 ]);
             }
 
             return response()->json([
-                'message' => 'Login successful', 
-                'user' => $user
-            ]);
-        } catch (FailedToVerifyToken $e) {
-            return response()->json([
-                'errorCode' => 1401,
-                'error' => 'Invalid Firebase token'
+                'errorCode' => 1101,
+                'error' => 'Token not provided',
             ], 401);
-        } catch (\Exception $e) {
-            Log::error('Error logging in user: ' . $e->getMessage());
-            
+
+        } catch (JWTException $e) {
             return response()->json([
-                'errorCode' => 1000,
-                'error' => 'Internal server error'
+                'errorCode' => 1102,
+                'error' => 'Token is invalid or cannot be refreshed',
             ], 500);
         }
     }
-
 }

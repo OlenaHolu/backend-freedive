@@ -23,6 +23,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::delete('/user/delete', [UserController::class, 'destroy']);
     Route::post('/posts', [PostController::class, 'store']);
     Route::get('/posts', [PostController::class, 'index']);
+    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
 
     // Dives
     Route::post('/dives', [DiveController::class, 'store']);

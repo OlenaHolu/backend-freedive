@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Post;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -58,19 +60,36 @@ class PostController extends Controller
 
     public function destroy($id)
     {
+        $user = auth()->user();
+        $post = Post::where('user_id', $user->id)->findOrFail($id);
+    
         try {
-            $post = Post::findOrFail($id);
+            // 1. Extraer path relativo
+            $imagePath = $this->extractSupabasePath($post->image_url);
+    
+            // 2. Eliminar imagen de Supabase
+            if ($imagePath) {
+                Http::withToken(env('SUPABASE_SERVICE_ROLE'))->delete(
+                    env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET') . "/" . $imagePath
+                );
+            }
+    
+            // 3. Eliminar post de DB
             $post->delete();
-
-            return response()->json([
-                'message' => 'Post deleted successfully',
-            ]);
+    
+            return response()->json(['message' => 'Post and image deleted']);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Internal error',
-                'details' => $e->getMessage(),
+                'error' => 'Failed to delete post or image',
+                'details' => $e->getMessage()
             ], 500);
         }
     }
-}
     
+    private function extractSupabasePath($signedUrl)
+    {
+        $matches = [];
+        preg_match('/sign\/(.+?)\?token=/', $signedUrl, $matches);
+        return $matches[1] ?? null;
+    }
+}

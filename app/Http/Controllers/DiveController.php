@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dive;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -61,7 +60,7 @@ class DiveController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Dive saved successfully ✅',
+            'message' => 'Dive saved successfully',
             'dive' => $dive,
         ]);
     }

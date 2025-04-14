@@ -4,24 +4,27 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DiveController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 
-// ✅ Rutas públicas
+// Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/contact', [ContactController::class, 'send']);
 
-// 🔐 Rutas protegidas con JWT (auth:api)
+// Protected routes JWT (auth:api)
 Route::middleware(['auth:api'])->group(function () {
     Route::get('/user', [AuthController::class, 'me']);
     Route::put('/logout', [AuthController::class, 'logout']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
 
-    // Perfil del usuario
+    // Profile
     Route::patch('/user/update', [UserController::class, 'update']);
     Route::delete('/user/delete', [UserController::class, 'destroy']);
+    Route::post('/posts', [PostController::class, 'store']);
+    Route::get('/posts', [PostController::class, 'index']);
 
-    // Buceos
+    // Dives
     Route::post('/dives', [DiveController::class, 'store']);
     Route::post('/dives/bulk', [DiveController::class, 'storeMany']);
     Route::get('/dives', [DiveController::class, 'index']);

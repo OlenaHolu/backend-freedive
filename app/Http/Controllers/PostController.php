@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Post;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -18,9 +17,11 @@ class PostController extends Controller
             'hashtags' => 'nullable|array',
         ]);
 
+        $imagePath = 'posts/' . basename($validated['image_url']);
+
         $post = Post::create([
             'user_id' => auth()->id(),
-            'image_url' => $validated['image_url'],
+            'image_path' => $imagePath,
             'description' => $validated['description'] ?? null,
             'location' => $validated['location'] ?? null,
             'hashtags' => $validated['hashtags'] ?? null,
@@ -44,7 +45,11 @@ class PostController extends Controller
 
             $posts = Post::where('user_id', $user->id)
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->get()
+                ->map(function ($post) {
+                    $post->image_url = $this->generateSignedUrl($post->image_path);
+                    return $post;
+                });
 
             return response()->json([
                 'message' => 'Posts retrieved successfully',
@@ -62,21 +67,18 @@ class PostController extends Controller
     {
         $user = auth()->user();
         $post = Post::where('user_id', $user->id)->findOrFail($id);
-    
+
         try {
-            // 1. Extraer path relativo
-            $imagePath = $this->extractSupabasePath($post->image_url);
-    
-            // 2. Eliminar imagen de Supabase
+            $imagePath = $post->image_path;
+
             if ($imagePath) {
                 Http::withToken(env('SUPABASE_SERVICE_ROLE'))->delete(
                     env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET') . "/" . $imagePath
                 );
             }
-    
-            // 3. Eliminar post de DB
+
             $post->delete();
-    
+
             return response()->json(['message' => 'Post and image deleted']);
         } catch (\Exception $e) {
             return response()->json([
@@ -85,11 +87,18 @@ class PostController extends Controller
             ], 500);
         }
     }
-    
-    private function extractSupabasePath($signedUrl)
+
+    private function generateSignedUrl($path)
     {
-        $matches = [];
-        preg_match('/sign\/(.+?)\?token=/', $signedUrl, $matches);
-        return $matches[1] ?? null;
+        $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
+            env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
+            ['expiresIn' => 3600]
+        );
+
+        if ($res->successful()) {
+            return $res->json()['signedURL'] ?? null;
+        }
+
+        return null;
     }
 }

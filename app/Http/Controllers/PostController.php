@@ -55,5 +55,22 @@ class PostController extends Controller
             ], 500);
         }
     }
+
+    public function destroy($id)
+    {
+        try {
+            $post = Post::findOrFail($id);
+            $post->delete();
+
+            return response()->json([
+                'message' => 'Post deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Internal error',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
     

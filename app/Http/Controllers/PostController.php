@@ -122,24 +122,21 @@ class PostController extends Controller
         );
     
         if ($res->successful()) {
-            $url = $res->json()['signedURL'] ?? null;
-            Log::info('Signed URL generated:', ['url' => $url]);
-            return $url;
+            // La respuesta contiene solo la ruta relativa, la completamos
+            $signedPath = $res->json()['signedURL'] ?? null;
+    
+            if ($signedPath) {
+                return rtrim(env('SUPABASE_URL'), '/') . $signedPath;
+            }
         }
     
-        Log::error('Failed to generate signed URL', [
-            'response' => $res->body(),
+        Log::error('❌ Failed to generate signed URL', [
             'path' => $path,
+            'status' => $res->status(),
+            'body' => $res->body(),
         ]);
-         // Lanzar error con JSON válido para frontend
-         throw new HttpResponseException(
-            response()->json([
-                'errorCode' => 1300,
-                'error' => 'Failed to generate signed URL',
-                'details' => $res->json() ?? $res->body(),
-            ], 422)
-        );
-
+    
+        return null;
     }
     
 

@@ -126,7 +126,8 @@ class PostController extends Controller
         if ($res->successful()) {
             $signedPath = $res->json()['signedURL'] ?? null;
             if ($signedPath) {
-                return rtrim(env('SUPABASE_URL'), '/') . $signedPath;
+                return rtrim(env('SUPABASE_URL'), '/') . '/storage/v1' . $signedPath;
+
             }
         }
     

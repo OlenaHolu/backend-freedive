@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Models\Post;
 use Illuminate\Support\Facades\Http;
@@ -20,15 +21,23 @@ class PostController extends Controller
         if (!str_contains($validated['image_url'], env('SUPABASE_URL'))) {
             return response()->json(['error' => 'Invalid image source'], 400);
         }
-        
-    
-        // Extraer path desde signed URL
+
+        Log::info('image_url recibido:', [$validated['image_url']]);
+
         $imagePath = $this->extractSupabasePath($validated['image_url']);
-    
+
+        if (!$imagePath) {
+            return response()->json([
+                'error' => 'Invalid or missing image_url',
+                'debug' => $validated['image_url'],
+            ], 400);
+        }
+
+
         if (!$imagePath) {
             return response()->json(['error' => 'Invalid image URL'], 400);
         }
-    
+
         $post = Post::create([
             'user_id' => auth()->id(),
             'image_path' => $imagePath, // 🔥 ahora está garantizado
@@ -36,13 +45,13 @@ class PostController extends Controller
             'location' => $validated['location'] ?? null,
             'hashtags' => $validated['hashtags'] ?? [],
         ]);
-    
+
         return response()->json([
             'message' => 'Post saved successfully',
             'post' => $post,
         ]);
     }
-    
+
 
     public function index()
     {
@@ -108,7 +117,6 @@ class PostController extends Controller
 
         if ($res->successful()) {
             return env('SUPABASE_URL') . ($res->json()['signedURL'] ?? '');
-
         }
 
         return null;
@@ -120,5 +128,4 @@ class PostController extends Controller
         preg_match('/sign\/(.+?)\?token=/', $signedUrl, $matches);
         return $matches[1] ?? null; // ejemplo: posts/posts/1744625601371.jpg
     }
-    
 }

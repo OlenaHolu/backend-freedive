@@ -41,13 +41,13 @@ class PostController extends Controller
         }
     }
 
+
     public function index()
     {
         try {
             $user = auth()->user();
             if (!$user) {
                 return response()->json([
-                    'errorCode' => 1501,
                     'error' => 'User not found',
                 ], 404);
             }
@@ -75,10 +75,10 @@ class PostController extends Controller
 
     public function destroy($id)
     {
-        try {
-            $user = auth()->user();
-            $post = Post::where('user_id', $user->id)->findOrFail($id);
+        $user = auth()->user();
+        $post = Post::where('user_id', $user->id)->findOrFail($id);
 
+        try {
             $imagePath = $post->image_path;
 
             if ($imagePath) {
@@ -92,7 +92,6 @@ class PostController extends Controller
             return response()->json(['message' => 'Post and image deleted']);
         } catch (\Exception $e) {
             return response()->json([
-                'errorCode' => 1301,
                 'error' => 'Failed to delete post or image',
                 'details' => $e->getMessage()
             ], 500);
@@ -105,25 +104,27 @@ class PostController extends Controller
             env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
             ['expiresIn' => 3600]
         );
-
+    
         if ($res->successful()) {
-            return env('SUPABASE_URL') . ($res->json()['signedURL'] ?? '');
+            $url = $res->json()['signedURL'] ?? null;
+            Log::info('Signed URL generated:', ['url' => $url]);
+            return $url;
         }
-
-        // Log interno para Railway o consola
-        Log::error('❌ Failed to generate signed URL', [
+    
+        Log::error('Failed to generate signed URL', [
+            'response' => $res->body(),
             'path' => $path,
-            'status' => $res->status(),
-            'body' => $res->body(),
         ]);
-
-        // Lanzar error con JSON válido para frontend
-        throw new HttpResponseException(
+         // Lanzar error con JSON válido para frontend
+         throw new HttpResponseException(
             response()->json([
                 'errorCode' => 1300,
                 'error' => 'Failed to generate signed URL',
                 'details' => $res->json() ?? $res->body(),
             ], 422)
         );
+
     }
+    
+
 }

@@ -116,18 +116,20 @@ class PostController extends Controller
 
     private function generateSignedUrl($path)
     {
+        $bucket = env('SUPABASE_BUCKET');
+    
+        // No añadir bucket dos veces
+        if (str_starts_with($path, "$bucket/")) {
+            $path = substr($path, strlen("$bucket/")); // lo quitamos
+        }
+    
         $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
-            env('SUPABASE_URL') . '/storage/v1/object/sign/' . $path,
+            env('SUPABASE_URL') . "/storage/v1/object/sign/{$bucket}/{$path}",
             ['expiresIn' => 3600]
         );
     
-        if ($res->successful()) {
-            // La respuesta contiene solo la ruta relativa, la completamos
-            $signedPath = $res->json()['signedURL'] ?? null;
-    
-            if ($signedPath) {
-                return rtrim(env('SUPABASE_URL'), '/') . $signedPath;
-            }
+        if ($res->successful() && isset($res->json()['signedURL'])) {
+            return rtrim(env('SUPABASE_URL'), '/') . $res->json()['signedURL'];
         }
     
         Log::error('❌ Failed to generate signed URL', [
@@ -136,7 +138,11 @@ class PostController extends Controller
             'body' => $res->body(),
         ]);
     
-        return null;
+        abort(422, json_encode([
+            'errorCode' => 1300,
+            'error' => 'Failed to generate signed URL',
+            'details' => $res->body(),
+        ]));
     }
     
 

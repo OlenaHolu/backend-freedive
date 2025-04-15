@@ -17,26 +17,32 @@ class PostController extends Controller
             'hashtags' => 'nullable|array',
         ]);
 
+        if (!str_contains($validated['image_url'], env('SUPABASE_URL'))) {
+            return response()->json(['error' => 'Invalid image source'], 400);
+        }
+        
+    
+        // Extraer path desde signed URL
         $imagePath = $this->extractSupabasePath($validated['image_url']);
-
+    
         if (!$imagePath) {
             return response()->json(['error' => 'Invalid image URL'], 400);
         }
-
-
+    
         $post = Post::create([
             'user_id' => auth()->id(),
-            'image_path' => $imagePath,
+            'image_path' => $imagePath, // 🔥 ahora está garantizado
             'description' => $validated['description'] ?? null,
             'location' => $validated['location'] ?? null,
-            'hashtags' => $validated['hashtags'] ?? null,
+            'hashtags' => $validated['hashtags'] ?? [],
         ]);
-
+    
         return response()->json([
             'message' => 'Post saved successfully',
             'post' => $post,
         ]);
     }
+    
 
     public function index()
     {
@@ -101,7 +107,8 @@ class PostController extends Controller
         );
 
         if ($res->successful()) {
-            return $res->json()['signedURL'] ?? null;
+            return env('SUPABASE_URL') . ($res->json()['signedURL'] ?? '');
+
         }
 
         return null;
@@ -111,6 +118,7 @@ class PostController extends Controller
     {
         $matches = [];
         preg_match('/sign\/(.+?)\?token=/', $signedUrl, $matches);
-        return $matches[1] ?? null;
+        return $matches[1] ?? null; // ejemplo: posts/posts/1744625601371.jpg
     }
+    
 }

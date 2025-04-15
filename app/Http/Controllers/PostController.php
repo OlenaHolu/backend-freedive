@@ -18,29 +18,9 @@ class PostController extends Controller
             'hashtags' => 'nullable|array',
         ]);
 
-        if (!str_contains($validated['image_url'], env('SUPABASE_URL'))) {
-            return response()->json(['error' => 'Invalid image source'], 400);
-        }
-
-        Log::info('image_url recibido:', [$validated['image_url']]);
-
-        $imagePath = $this->extractSupabasePath($validated['image_url']);
-
-        if (!$imagePath) {
-            return response()->json([
-                'error' => 'Invalid or missing image_url',
-                'debug' => $validated['image_url'],
-            ], 400);
-        }
-
-
-        if (!$imagePath) {
-            return response()->json(['error' => 'Invalid image URL'], 400);
-        }
-
         $post = Post::create([
             'user_id' => auth()->id(),
-            'image_path' => $imagePath, // 🔥 ahora está garantizado
+            'image_path' => $validated['image_url'],
             'description' => $validated['description'] ?? null,
             'location' => $validated['location'] ?? null,
             'hashtags' => $validated['hashtags'] ?? [],
@@ -120,12 +100,5 @@ class PostController extends Controller
         }
 
         return null;
-    }
-
-    private function extractSupabasePath($signedUrl)
-    {
-        $matches = [];
-        preg_match('/sign\/(.+?)\?token=/', $signedUrl, $matches);
-        return $matches[1] ?? null; // ejemplo: posts/posts/1744625601371.jpg
     }
 }

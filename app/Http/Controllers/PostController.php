@@ -97,16 +97,24 @@ class PostController extends Controller
     }
 
     private function generateSignedUrl($path)
-    {
-        $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
-            env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
-            ['expiresIn' => 3600]
-        );
+{
+    $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
+        env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
+        ['expiresIn' => 3600]
+    );
 
-        if ($res->successful()) {
-            return env('SUPABASE_URL') . ($res->json()['signedURL'] ?? '');
-        }
-
-        return null;
+    if ($res->successful()) {
+        // Supabase ya devuelve URL completa
+        return $res->json()['signedURL'] ?? null;
     }
+
+    Log::error('Error generating signed URL', [
+        'status' => $res->status(),
+        'body' => $res->body(),
+        'path' => $path
+    ]);
+
+    return null;
+}
+
 }

@@ -117,7 +117,7 @@ class PostController extends Controller
     private function generateSignedUrl($path)
     {
         $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
-            env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
+            env('SUPABASE_URL') . '/storage/v1/object/sign/' . $path,
             ['expiresIn' => 3600]
         );
     

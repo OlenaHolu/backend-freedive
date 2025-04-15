@@ -12,7 +12,7 @@ class PostController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'image_url' => 'required|string',
+            'image_path' => 'required|string',
             'description' => 'nullable|string',
             'location' => 'nullable|string',
             'hashtags' => 'nullable|array',
@@ -20,7 +20,7 @@ class PostController extends Controller
 
         $post = Post::create([
             'user_id' => auth()->id(),
-            'image_path' => $validated['image_url'],
+            'image_path' => $validated['image_path'],
             'description' => $validated['description'] ?? null,
             'location' => $validated['location'] ?? null,
             'hashtags' => $validated['hashtags'] ?? [],

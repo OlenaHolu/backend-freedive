@@ -23,6 +23,24 @@ This table documents all the custom error codes used to safely and clearly commu
 
 ---
 
+## 📝 Validation (1200–1299)
+
+| Code  | Message                  | Description                               |
+|-------|--------------------------|-------------------------------------------|
+| 1201  | Email is required        | Email field is empty or missing           |
+| 1202  | Password too short       | Password does not meet length requirement |
+| 1203  | Email already exists     | Email already exists in the database      |
+
+---
+
+## 📝 Post/Feed Errors (1300–1399)
+
+| Code  | Message                  | Description                               |
+|-------|--------------------------|-------------------------------------------|
+| 1300  | Failed to save post        | Failed to save post           |
+
+---
+
 ## 🧑 User (1500–1599)
 
 | Code  | Message                  | Description                               |
@@ -31,24 +49,3 @@ This table documents all the custom error codes used to safely and clearly commu
 | 1502  | Incomplete data          | Missing required fields during registration |
 | 1503  | Invalid credentials    | Incorrect email or password               |
 
----
-
-## 🔄 Auth Errors (1400–1499)
-
-| Code  | Message                         | Description                               |
-|-------|----------------------------------|-------------------------------------------|
-| 1401  | Invalid Firebase token           | Firebase couldn't verify the token        |
-| 1402  | Firebase authentication error    | Problem during login with Google in Firebase        |
-| 1403  | Firebase: invalid email          | Email format is invalid (Firebase error)  |
-| 1405  | Firebase: email already in use    | Email already in use               |
-| 1406  | Failed to delete user in Firabase    | Unexpected Firebase-related deletion failure               |
-
----
-
-## 📝 Validation (1200–1299)
-
-| Code  | Message                  | Description                               |
-|-------|--------------------------|-------------------------------------------|
-| 1201  | Email is required        | Email field is empty or missing           |
-| 1202  | Password too short       | Password does not meet length requirement |
-| 1203  | Email already exists     | Email already exists in the database      |

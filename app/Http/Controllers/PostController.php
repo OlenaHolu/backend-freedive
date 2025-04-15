@@ -11,6 +11,7 @@ class PostController extends Controller
 {
     public function store(Request $request)
     {
+        try{
         $validated = $request->validate([
             'image_path' => 'required|string',
             'description' => 'nullable|string',
@@ -30,6 +31,13 @@ class PostController extends Controller
             'message' => 'Post saved successfully',
             'post' => $post,
         ]);
+    } catch (\Exception $e) {
+            return response()->json([
+                'errorCode' => 1300,
+                'error' => 'Failed to save post',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
     }
 
 

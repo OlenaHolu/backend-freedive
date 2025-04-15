@@ -40,13 +40,13 @@ class PostController extends Controller
         }
     }
 
-
     public function index()
     {
         try {
             $user = auth()->user();
             if (!$user) {
                 return response()->json([
+                    'errorCode' => 1501,
                     'error' => 'User not found',
                 ], 404);
             }
@@ -65,22 +65,19 @@ class PostController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
+                'errorCode' => 1000,
                 'error' => 'Internal error',
                 'details' => $e->getMessage(),
-                'debug' => [
-                    'user' => "user",
-                    "exception" => $e,
-                ]
             ], 500);
         }
     }
 
     public function destroy($id)
     {
-        $user = auth()->user();
-        $post = Post::where('user_id', $user->id)->findOrFail($id);
-
         try {
+            $user = auth()->user();
+            $post = Post::where('user_id', $user->id)->findOrFail($id);
+
             $imagePath = $post->image_path;
 
             if ($imagePath) {
@@ -94,6 +91,7 @@ class PostController extends Controller
             return response()->json(['message' => 'Post and image deleted']);
         } catch (\Exception $e) {
             return response()->json([
+                'errorCode' => 1301,
                 'error' => 'Failed to delete post or image',
                 'details' => $e->getMessage()
             ], 500);
@@ -101,31 +99,30 @@ class PostController extends Controller
     }
 
     private function generateSignedUrl($path)
-{
-    $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
-        env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
-        ['expiresIn' => 3600]
-    );
+    {
+        $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
+            env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
+            ['expiresIn' => 3600]
+        );
 
-    if ($res->successful()) {
-        return env('SUPABASE_URL') . ($res->json()['signedURL'] ?? '');
+        if ($res->successful()) {
+            return env('SUPABASE_URL') . ($res->json()['signedURL'] ?? '');
+        }
+
+        // Log interno para Railway o consola
+        Log::error('❌ Failed to generate signed URL', [
+            'path' => $path,
+            'status' => $res->status(),
+            'body' => $res->body(),
+        ]);
+
+        // Lanzar error con JSON válido para frontend
+        throw new HttpResponseException(
+            response()->json([
+                'errorCode' => 1300,
+                'error' => 'Failed to generate signed URL',
+                'details' => $res->json() ?? $res->body(),
+            ], 422)
+        );
     }
-
-    // Log interno (Railway, consola, etc.)
-    Log::error('❌ Failed to generate signed URL', [
-        'path' => $path,
-        'status' => $res->status(),
-        'body' => $res->body(),
-    ]);
-
-    // Y devolvemos al frontend con código 1300 (por ejemplo)
-    abort(422, json_encode([
-        'errorCode' => 1300,
-        'error' => 'Failed to generate signed URL',
-        'details' => $res->body(),
-    ]));
-}
-
-    
-
 }

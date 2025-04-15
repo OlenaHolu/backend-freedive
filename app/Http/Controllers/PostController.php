@@ -17,7 +17,12 @@ class PostController extends Controller
             'hashtags' => 'nullable|array',
         ]);
 
-        $imagePath = 'posts/' . basename($validated['image_url']);
+        $imagePath = $this->extractSupabasePath($validated['image_url']);
+
+        if (!$imagePath) {
+            return response()->json(['error' => 'Invalid image URL'], 400);
+        }
+
 
         $post = Post::create([
             'user_id' => auth()->id(),
@@ -100,5 +105,12 @@ class PostController extends Controller
         }
 
         return null;
+    }
+
+    private function extractSupabasePath($signedUrl)
+    {
+        $matches = [];
+        preg_match('/sign\/(.+?)\?token=/', $signedUrl, $matches);
+        return $matches[1] ?? null;
     }
 }

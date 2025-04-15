@@ -67,6 +67,10 @@ class PostController extends Controller
             return response()->json([
                 'error' => 'Internal error',
                 'details' => $e->getMessage(),
+                'debug' => [
+                    'user' => "user",
+                    "exception" => $e,
+                ]
             ], 500);
         }
     }
@@ -97,25 +101,31 @@ class PostController extends Controller
     }
 
     private function generateSignedUrl($path)
-    {
-        $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
-            env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
-            ['expiresIn' => 3600]
-        );
-    
-        if ($res->successful()) {
-            $url = $res->json()['signedURL'] ?? null;
-            Log::info('Signed URL generated:', ['url' => $url]);
-            return $url;
-        }
-    
-        Log::error('Failed to generate signed URL', [
-            'response' => $res->body(),
-            'path' => $path,
-        ]);
-    
-        return null;
+{
+    $res = Http::withToken(env('SUPABASE_SERVICE_ROLE'))->post(
+        env('SUPABASE_URL') . '/storage/v1/object/sign/' . env('SUPABASE_BUCKET') . '/' . $path,
+        ['expiresIn' => 3600]
+    );
+
+    if ($res->successful()) {
+        return env('SUPABASE_URL') . ($res->json()['signedURL'] ?? '');
     }
+
+    // Log interno (Railway, consola, etc.)
+    Log::error('❌ Failed to generate signed URL', [
+        'path' => $path,
+        'status' => $res->status(),
+        'body' => $res->body(),
+    ]);
+
+    // Y devolvemos al frontend con código 1300 (por ejemplo)
+    abort(422, json_encode([
+        'errorCode' => 1300,
+        'error' => 'Failed to generate signed URL',
+        'details' => $res->body(),
+    ]));
+}
+
     
 
 }

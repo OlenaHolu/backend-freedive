@@ -46,32 +46,48 @@ class PostController extends Controller
     {
         try {
             $user = auth()->user();
+    
             if (!$user) {
                 return response()->json([
+                    'errorCode' => 1501,
                     'error' => 'User not found',
                 ], 404);
             }
-
+    
             $posts = Post::where('user_id', $user->id)
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($post) {
-                    $post->image_url = $this->generateSignedUrl($post->image_path);
+                    $signedUrl = $this->generateSignedUrl($post->image_path);
+    
+                    if (!$signedUrl) {
+                        Log::warning('🔍 Signed URL is null', [
+                            'image_path' => $post->image_path,
+                            'post_id' => $post->id,
+                        ]);
+                    }
+    
+                    $post->image_url = $signedUrl;
                     return $post;
                 });
-
+    
             return response()->json([
                 'message' => 'Posts retrieved successfully',
                 'posts' => $posts,
             ]);
         } catch (\Exception $e) {
+            Log::error('❌ Failed to fetch posts', [
+                'exception' => $e,
+            ]);
+    
             return response()->json([
                 'errorCode' => 1000,
                 'error' => 'Internal error',
-                'details' => $e->getMessage(),
+                'details' => $e->getMessage() ?: 'No details provided',
             ], 500);
         }
     }
+    
 
     public function destroy($id)
     {

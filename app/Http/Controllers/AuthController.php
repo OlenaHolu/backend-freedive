@@ -62,6 +62,7 @@ class AuthController extends Controller
             'message' => 'Login successful',
             'user'    => Auth::user(),
             'token'   => $token,
+            'expires_in' => Auth::factory()->getTTL() * 60,
         ]);
     }
 

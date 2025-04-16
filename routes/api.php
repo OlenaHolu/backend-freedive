@@ -6,11 +6,16 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DiveController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\GoogleAuthController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/contact', [ContactController::class, 'send']);
+
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+
 
 // Protected routes JWT (auth:api)
 Route::middleware(['auth:api'])->group(function () {

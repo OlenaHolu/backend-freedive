@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
@@ -72,7 +73,7 @@ class AuthController extends Controller
             'user' => Auth::user()
         ]);
     }
-    
+
 
     public function logout()
     {
@@ -99,11 +100,56 @@ class AuthController extends Controller
                 'errorCode' => 1101,
                 'error' => 'Token not provided',
             ], 401);
-
         } catch (JWTException $e) {
             return response()->json([
                 'errorCode' => 1102,
                 'error' => 'Token is invalid or cannot be refreshed',
+            ], 500);
+        }
+    }
+
+    public function handleGoogleCallback(Request $request)
+    {
+        try {
+            $code = $request->input('code');
+
+            if (!$code) {
+                return response()->json([
+                    'errorCode' => 1401,
+                    'error' => 'Missing Google authorization code',
+                ], 400);
+            }
+
+            $googleUser = Socialite::driver('google')->stateless()->getAccessTokenResponse($code);
+
+            $token = $googleUser['access_token'];
+
+            $googleUserDetails = Socialite::driver('google')->stateless()->userFromToken($token);
+
+            $user = User::where('email', $googleUserDetails->getEmail())->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $googleUserDetails->getName(),
+                    'email' => $googleUserDetails->getEmail(),
+                    'photo' => $googleUserDetails->getAvatar() ?: null,
+                    'password' => Hash::make(uniqid()), // valor aleatorio
+                ]);
+            }
+
+            $jwt = Auth::guard('api')->login($user);
+
+            return response()->json([
+                'message' => 'Login successful',
+                'user' => $user,
+                'token' => $jwt,
+                'expires_in' => Auth::factory()->getTTL() * 60,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'errorCode' => 1500,
+                'error' => 'Google login failed',
+                'details' => $e->getMessage(),
             ], 500);
         }
     }

@@ -13,8 +13,8 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/contact', [ContactController::class, 'send']);
 
-Route::get('/auth/google', [GoogleAuthController::class, 'redirect']);
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+//Route::get('/auth/google', [GoogleAuthController::class, 'redirect']);
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
 
 // Protected routes JWT (auth:api)

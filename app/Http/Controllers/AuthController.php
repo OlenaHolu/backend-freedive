@@ -153,4 +153,9 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    public function redirectToGoogle()
+    {
+        return Socialite::driver('google')->stateless()->redirect();
+    }
 }

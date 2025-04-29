@@ -6,7 +6,6 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DiveController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\GoogleAuthController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);

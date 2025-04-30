@@ -143,13 +143,14 @@ class UserController extends Controller
                 ->pluck('image_path')
                 ->toArray(); // ['abc.jpg', 'xyz.jpg']
 
-            if (!empty($pathsToDelete)) {
-                Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
-                    ->withHeaders(['Content-Type' => 'application/json'])
-                    ->post(env('SUPABASE_URL') . "/storage/v1/object/delete", [
-                        'prefixes' => array_map(fn($path) => env('SUPABASE_BUCKET_POSTS') . '/' . $path, $pathsToDelete)
-                    ]);
-            }
+                if (!empty($pathsToDelete)) {
+                    Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
+                        ->withHeaders(['Content-Type' => 'application/json'])
+                        ->post(env('SUPABASE_URL') . "/storage/v1/object/delete", [
+                            'paths' => $pathsToDelete
+                        ]);
+                }
+                
 
             // 3. Borrar los posts y el usuario
             Post::where('user_id', $user->id)->delete();

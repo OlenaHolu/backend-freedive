@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Error;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -68,7 +69,7 @@ class UserController extends Controller
                     };
                 }
             }
-            
+
             // Handle other validation errors
             return response()->json([
                 'errorCode' => ErrorCodes::VALIDATION_FAILED,
@@ -126,6 +127,12 @@ class UserController extends Controller
         try {
             /** @var \App\Models\User $user **/
             $user = Auth::user();
+
+            $fileName = basename($user->photo);
+
+            Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
+                ->delete(env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_AVATARS') . "/" . $fileName);
+            
             $user->delete();
 
             return response()->json([

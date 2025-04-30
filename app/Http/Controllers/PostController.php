@@ -99,7 +99,7 @@ class PostController extends Controller
 
             if ($imagePath) {
                 Http::withToken(env('SUPABASE_SERVICE_ROLE'))->delete(
-                    env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET') . "/" . $imagePath
+                    env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_POSTS') . "/" . $imagePath
                 );
             }
 

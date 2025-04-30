@@ -59,6 +59,16 @@ class UserController extends Controller
                     };
                 }
             }
+
+            if (isset($errors['name'])) {
+                foreach ($errors['name'] as $msg) {
+                    return match($msg) {
+                        'ERR_NAME_REQUIRED' => response()->json(['errorCode' => ErrorCodes::NAME_REQUIRED, 'field' => 'name', 'message' => 'Name is required'], 422),
+                        default             => null,
+                    };
+                }
+            }
+            
             // Handle other validation errors
             return response()->json([
                 'errorCode' => ErrorCodes::VALIDATION_FAILED,

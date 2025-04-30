@@ -128,11 +128,28 @@ class UserController extends Controller
             /** @var \App\Models\User $user **/
             $user = Auth::user();
 
-            $fileName = basename($user->photo);
+            if ($user->photo) {
+                $fileName = basename(parse_url($user->photo, PHP_URL_PATH));
+                $deleteUrl = env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_AVATARS') . "/" . $fileName;
+                $response = Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
+                    ->get($deleteUrl);
 
-            Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
-                ->delete(env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_AVATARS') . "/" . $fileName);
-            
+                if ($response->failed()) {
+                    return response()->json([
+                        'errorCode' => ErrorCodes::INTERNAL_SERVER_ERROR,
+                        'message' => 'Failed to delete photo from storage',
+                    ], 500);
+                }
+                $deleteResponse = Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
+                    ->delete($deleteUrl);
+                if ($deleteResponse->failed()) {
+                    return response()->json([
+                        'errorCode' => ErrorCodes::INTERNAL_SERVER_ERROR,
+                        'message' => 'Failed to delete photo from storage',
+                    ], 500);
+                }
+            }
+           
             $user->delete();
 
             return response()->json([

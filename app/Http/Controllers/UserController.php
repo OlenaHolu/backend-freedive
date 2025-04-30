@@ -69,7 +69,6 @@ class UserController extends Controller
                     };
                 }
             }
-
             // Handle other validation errors
             return response()->json([
                 'errorCode' => ErrorCodes::VALIDATION_FAILED,

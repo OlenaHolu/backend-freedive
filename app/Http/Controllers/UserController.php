@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\ErrorCodes;
+use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +24,7 @@ class UserController extends Controller
             'photo'      => 'nullable|url',
             'password'   => 'nullable|string|min:6|confirmed',
         ];
-    
+
         $messages = [
             'name.required' => 'ERR_NAME_REQUIRED',
             'email.required' => 'ERR_EMAIL_REQUIRED',
@@ -33,15 +34,15 @@ class UserController extends Controller
             'password.confirmed' => 'ERR_PASSWORD_MISMATCH',
             'password.min' => 'ERR_PASSWORD_TOO_SHORT',
         ];
-    
+
         $validator = Validator::make($request->all(), $rules, $messages);
-    
+
         if ($validator->fails()) {
             $errors = $validator->errors()->toArray();
-    
+
             if (isset($errors['email'])) {
                 foreach ($errors['email'] as $msg) {
-                    return match($msg) {
+                    return match ($msg) {
                         'ERR_EMAIL_REQUIRED'   => response()->json(['errorCode' => ErrorCodes::EMAIL_REQUIRED, 'field' => 'email', 'message' => 'Email is required'], 422),
                         'ERR_EMAIL_TAKEN'      => response()->json(['errorCode' => ErrorCodes::EMAIL_ALREADY_EXISTS, 'field' => 'email', 'message' => 'Email already exists'], 422),
                         'ERR_EMAIL_INVALID'    => response()->json(['errorCode' => ErrorCodes::EMAIL_INVALID, 'field' => 'email', 'message' => 'Invalid email format'], 422),
@@ -50,10 +51,10 @@ class UserController extends Controller
                     };
                 }
             }
-    
+
             if (isset($errors['password'])) {
                 foreach ($errors['password'] as $msg) {
-                    return match($msg) {
+                    return match ($msg) {
                         'ERR_PASSWORD_MISMATCH' => response()->json(['errorCode' => ErrorCodes::PASSWORD_MISMATCH, 'field' => 'password', 'message' => 'Password mismatch'], 422),
                         'ERR_PASSWORD_TOO_SHORT' => response()->json(['errorCode' => ErrorCodes::PASSWORD_TOO_SHORT, 'field' => 'password', 'message' => 'Password too short'], 422),
                         default                 => null,
@@ -63,7 +64,7 @@ class UserController extends Controller
 
             if (isset($errors['name'])) {
                 foreach ($errors['name'] as $msg) {
-                    return match($msg) {
+                    return match ($msg) {
                         'ERR_NAME_REQUIRED' => response()->json(['errorCode' => ErrorCodes::NAME_REQUIRED, 'field' => 'name', 'message' => 'Name is required'], 422),
                         default             => null,
                     };
@@ -76,7 +77,7 @@ class UserController extends Controller
                 'errors' => $errors,
             ], 422);
         }
-    
+
         /** @var \App\Models\User $user **/
         $user = Auth::user();
         if (!$user) {
@@ -127,33 +128,34 @@ class UserController extends Controller
             /** @var \App\Models\User $user **/
             $user = Auth::user();
 
+            // 1. Eliminar avatar
             if ($user->photo) {
-                $fileName = basename(parse_url($user->photo, PHP_URL_PATH));
-                $deleteUrl = env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_AVATARS') . "/" . $fileName;
-                $response = Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
-                    ->get($deleteUrl);
+                $avatarFile = basename(parse_url($user->photo, PHP_URL_PATH));
 
-                if ($response->failed()) {
-                    return response()->json([
-                        'errorCode' => ErrorCodes::INTERNAL_SERVER_ERROR,
-                        'message' => 'Failed to delete photo from storage',
-                    ], 500);
-                }
-                $deleteResponse = Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
-                    ->delete($deleteUrl);
-                if ($deleteResponse->failed()) {
-                    return response()->json([
-                        'errorCode' => ErrorCodes::INTERNAL_SERVER_ERROR,
-                        'message' => 'Failed to delete photo from storage',
-                    ], 500);
-                }
+                Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))->delete(
+                    env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_AVATARS') . "/{$avatarFile}"
+                );
             }
-           
+
+            // 2. Eliminar imágenes de posts (lote)
+            $pathsToDelete = Post::where('user_id', $user->id)
+                ->whereNotNull('image_path')
+                ->pluck('image_path')
+                ->toArray(); // ['abc.jpg', 'xyz.jpg']
+
+            if (!empty($pathsToDelete)) {
+                Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
+                    ->withHeaders(['Content-Type' => 'application/json'])
+                    ->post(env('SUPABASE_URL') . "/storage/v1/object/delete", [
+                        'prefixes' => array_map(fn($path) => env('SUPABASE_BUCKET_POSTS') . '/' . $path, $pathsToDelete)
+                    ]);
+            }
+
+            // 3. Borrar los posts y el usuario
+            Post::where('user_id', $user->id)->delete();
             $user->delete();
 
-            return response()->json([
-                'message' => 'User deleted successfully'
-            ]);
+            return response()->json(['message' => 'User and all associated content deleted']);
         } catch (\Exception $e) {
             Log::error('Delete error: ' . $e->getMessage());
 

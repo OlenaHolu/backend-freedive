@@ -15,13 +15,13 @@ class ErrorCodes
 
     // 📝 Validation (1200–1299)
     const VALIDATION_FAILED = 1200;
-    const EMAIL_REQUIRED = 1201;
-    const PASSWORD_TOO_SHORT = 1202;
-    const EMAIL_ALREADY_EXISTS = 1203;  
-    const EMAIL_INVALID = 1204;
-    const EMAIL_TOO_LONG = 1205;
-    const PASSWORD_MISMATCH = 1206;
-
+    const NAME_REQUIRED = 1201;
+    const EMAIL_REQUIRED = 1202;
+    const EMAIL_TOO_LONG = 1203;
+    const EMAIL_ALREADY_EXISTS = 1204;  
+    const EMAIL_INVALID = 1205;
+    const PASSWORD_TOO_SHORT = 1206;
+    const PASSWORD_MISMATCH = 1207;
     
     // 📝 Post/Feed Errors (1300–1399)
     const POST_SAVE_FAILED = 1300;

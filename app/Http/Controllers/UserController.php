@@ -24,10 +24,13 @@ class UserController extends Controller
         ];
     
         $messages = [
+            'name.required' => 'ERR_NAME_REQUIRED',
+            'email.required' => 'ERR_EMAIL_REQUIRED',
             'email.unique' => 'ERR_EMAIL_TAKEN',
             'email.email'  => 'ERR_EMAIL_INVALID',
             'email.max'    => 'ERR_EMAIL_TOO_LONG',
             'password.confirmed' => 'ERR_PASSWORD_MISMATCH',
+            'password.min' => 'ERR_PASSWORD_TOO_SHORT',
         ];
     
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -37,37 +40,23 @@ class UserController extends Controller
     
             if (isset($errors['email'])) {
                 foreach ($errors['email'] as $msg) {
-                    if ($msg === 'ERR_EMAIL_TAKEN') {
-                        return response()->json([
-                            'errorCode' => ErrorCodes::EMAIL_ALREADY_EXISTS,
-                            'field' => 'email',
-                            'message' => 'Email already in use',
-                        ], 422);
-                    }
-                    if ($msg === 'ERR_EMAIL_INVALID') {
-                        return response()->json([
-                            'errorCode' => ErrorCodes::EMAIL_INVALID,
-                            'field' => 'email',
-                            'message' => 'Invalid email format',
-                        ], 422);
-                    }
-                    if ($msg === 'ERR_EMAIL_TOO_LONG') {
-                        return response()->json([
-                            'errorCode' => ErrorCodes::EMAIL_TOO_LONG,
-                            'field' => 'email',
-                            'message' => 'Email is too long',
-                        ], 422);
-                    }
+                    return match($msg) {
+                        'ERR_EMAIL_REQUIRED'   => response()->json(['errorCode' => ErrorCodes::EMAIL_REQUIRED, 'field' => 'email', 'message' => 'Email is required'], 422),
+                        'ERR_EMAIL_TAKEN'      => response()->json(['errorCode' => ErrorCodes::EMAIL_ALREADY_EXISTS, 'field' => 'email', 'message' => 'Email already exists'], 422),
+                        'ERR_EMAIL_INVALID'    => response()->json(['errorCode' => ErrorCodes::EMAIL_INVALID, 'field' => 'email', 'message' => 'Invalid email format'], 422),
+                        'ERR_EMAIL_TOO_LONG'   => response()->json(['errorCode' => ErrorCodes::EMAIL_TOO_LONG, 'field' => 'email', 'message' => 'Email too long'], 422),
+                        default                => null,
+                    };
                 }
             }
     
             if (isset($errors['password'])) {
-                if (in_array('ERR_PASSWORD_MISMATCH', $errors['password'])) {
-                    return response()->json([
-                        'errorCode' => ErrorCodes::PASSWORD_MISMATCH,
-                        'field' => 'password',
-                        'message' => 'Passwords do not match',
-                    ], 422);
+                foreach ($errors['password'] as $msg) {
+                    return match($msg) {
+                        'ERR_PASSWORD_MISMATCH' => response()->json(['errorCode' => ErrorCodes::PASSWORD_MISMATCH, 'field' => 'password', 'message' => 'Password mismatch'], 422),
+                        'ERR_PASSWORD_TOO_SHORT' => response()->json(['errorCode' => ErrorCodes::PASSWORD_TOO_SHORT, 'field' => 'password', 'message' => 'Password too short'], 422),
+                        default                 => null,
+                    };
                 }
             }
             // Handle other validation errors

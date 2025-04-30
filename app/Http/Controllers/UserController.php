@@ -18,8 +18,8 @@ class UserController extends Controller
     public function update(Request $request)
     {
         $rules = [
-            'name'       => 'required|string|max:255',
-            'email'      => 'required|email|max:255|unique:users,email,' . Auth::id(),
+            'name'       => 'sometimes|required|string|max:255',
+            'email'      => 'sometimes|required|email|max:255|unique:users,email,' . Auth::id(),
             'photo'      => 'nullable|url',
             'password'   => 'nullable|string|min:6|confirmed',
         ];

@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use Error;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -124,41 +124,54 @@ class UserController extends Controller
 
     public function destroy()
     {
-        try {
-            /** @var \App\Models\User $user **/
-            $user = Auth::user();
+        /** @var \App\Models\User $user **/
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'errorCode' => ErrorCodes::UNAUTHORIZED,
+                'message' => 'User not authenticated',
+            ], 401);
+        }
 
+        DB::beginTransaction();
+
+        try {
             // 1. Eliminar avatar
             if ($user->photo) {
                 $avatarFile = basename(parse_url($user->photo, PHP_URL_PATH));
 
-                Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))->delete(
+                $response = Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))->delete(
                     env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_AVATARS') . "/{$avatarFile}"
                 );
+
+                if ($response->failed()) {
+                    throw new \Exception('Failed to delete avatar: ' . $response->body());
+                }
             }
 
-            // 2. Eliminar imágenes de posts (lote)
-            $pathsToDelete = Post::where('user_id', $user->id)
-                ->whereNotNull('image_path')
-                ->pluck('image_path')
-                ->toArray(); // ['abc.jpg', 'xyz.jpg']
+            // 2. Delete posts
+            $posts = Post::where('user_id', $user->id)->get();
+            foreach ($posts as $post) {
+                if ($post->image_path) {
 
-                if (!empty($pathsToDelete)) {
-                    Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))
-                        ->withHeaders(['Content-Type' => 'application/json'])
-                        ->post(env('SUPABASE_URL') . "/storage/v1/object/delete", [
-                            'paths' => $pathsToDelete
-                        ]);
+                    $response = Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))->delete(
+                        env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_POSTS') . "/{$post->image_path}"
+                    );
+
+                    if ($response->failed()) {
+                        throw new \Exception('Failed to delete post image: ' . $response->body());
+                    }
                 }
-                
+                $post->delete();
+            }
 
-            // 3. Borrar los posts y el usuario
-            Post::where('user_id', $user->id)->delete();
             $user->delete();
+
+            DB::commit();
 
             return response()->json(['message' => 'User and all associated content deleted']);
         } catch (\Exception $e) {
-            Log::error('Delete error: ' . $e->getMessage());
+            DB::rollBack();
 
             return response()->json([
                 'errorCode' => ErrorCodes::INTERNAL_SERVER_ERROR,

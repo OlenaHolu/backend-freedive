@@ -125,6 +125,24 @@ class DiveController extends Controller
             $dive->BottomTemperature = $diveData['BottomTemperature'] ?? 0;
             $dive->EndTemperature = $diveData['EndTemperature'] ?? 0;
             $dive->PreviousMaxDepth = $diveData['PreviousMaxDepth'] ?? null;
+            $dive->SampleInterval = $diveData['SampleInterval'] ?? null;
+            $dive->AltitudeMode = $diveData['AltitudeMode'] ?? null;
+            $dive->PersonalMode = $diveData['PersonalMode'] ?? null;
+            $dive->DiveNumberInSerie = $diveData['DiveNumberInSerie'] ?? null;
+            $dive->SurfaceTime = $diveData['SurfaceTime'] ?? null;
+            $dive->SurfacePressure = $diveData['SurfacePressure'] ?? null;
+            $dive->Weather = $diveData['Weather'] ?? null;
+            $dive->Visibility = $diveData['Visibility'] ?? null;
+            $dive->Software = $diveData['Software'] ?? null;
+            $dive->SerialNumber = $diveData['SerialNumber'] ?? '';
+            $dive->TimeFromReset = $diveData['TimeFromReset'] ?? null;
+            $dive->Battery = $diveData['Battery'] ?? null;
+            $dive->LastDecoStopDepth = $diveData['LastDecoStopDepth'] ?? null;
+            $dive->AscentMode = $diveData['AscentMode'] ?? 0;
+            $dive->Weight = $diveData['Weight'] ?? null;
+            $dive->Weather = $diveData['Weather'] ?? null;
+            $dive->Visibility = $diveData['Visibility'] ?? null;
+            $dive->Source = $diveData['Source'] ?? null;
             $dive->save(); // 👈 Aquí obtenemos el ID
 
             // Agregamos samples con ese ID

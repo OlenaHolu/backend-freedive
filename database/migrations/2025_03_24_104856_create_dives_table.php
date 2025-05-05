@@ -35,16 +35,8 @@ return new class extends Migration
             $table->text('Source')->nullable();
             $table->smallInteger('Mode')->default(3);
             $table->text('Note')->nullable();
-            
             $table->smallInteger('PersonalMode')->nullable();
-            
-            
-
-            
-            
-
             $table->string('SerialNumber')->default('');
-            $table->integer('TimeFromReset')->nullable();
 
             $table->timestamps();
         });

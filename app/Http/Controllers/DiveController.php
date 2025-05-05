@@ -132,7 +132,6 @@ class DiveController extends Controller
             $dive->SurfaceTime = $diveData['SurfaceTime'] ?? null;
             $dive->SurfacePressure = $diveData['SurfacePressure'] ?? null;
             $dive->SerialNumber = $diveData['SerialNumber'] ?? '';
-            $dive->TimeFromReset = $diveData['TimeFromReset'] ?? null;
             $dive->Source = $diveData['Source'] ?? null;
             $dive->save(); // 👈 Aquí obtenemos el ID
 

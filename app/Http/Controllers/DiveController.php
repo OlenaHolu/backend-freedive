@@ -45,6 +45,7 @@ class DiveController extends Controller
             'BottomTemperature' => 'nullable|numeric',
             'EndTemperature' => 'nullable|numeric',
             'PreviousMaxDepth' => 'nullable|numeric',
+            'SurfaceTime' => 'nullable|integer',
         ]);
 
         $dive = Dive::create([
@@ -57,6 +58,7 @@ class DiveController extends Controller
             'BottomTemperature' => $validated['BottomTemperature'] ?? 0,
             'EndTemperature' => $validated['EndTemperature'] ?? 0,
             'PreviousMaxDepth' => $validated['PreviousMaxDepth'] ?? null,
+            'SurfaceTime' => $validated['SurfaceTime'] ?? null,
         ]);
 
         return response()->json([
@@ -77,6 +79,7 @@ class DiveController extends Controller
             'BottomTemperature' => 'nullable|numeric',
             'EndTemperature' => 'nullable|numeric',
             'PreviousMaxDepth' => 'nullable|numeric',
+            'SurfaceTime' => 'nullable|integer',
         ]);
 
         $dive = Dive::where('id', $id)
@@ -133,9 +136,9 @@ class DiveController extends Controller
             $dive->SurfacePressure = $diveData['SurfacePressure'] ?? null;
             $dive->SerialNumber = $diveData['SerialNumber'] ?? '';
             $dive->Source = $diveData['Source'] ?? null;
-            $dive->save(); // 👈 Aquí obtenemos el ID
+            $dive->save(); 
 
-            // Agregamos samples con ese ID
+            
             if (!empty($diveData['samples'])) {
                 foreach ($diveData['samples'] as $sample) {
                     $samplesToInsert[] = [

@@ -136,18 +136,23 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
-            // 1. Eliminar avatar
+            // Delete avatar
             if ($user->photo) {
-                $avatarFile = basename(parse_url($user->photo, PHP_URL_PATH));
-
-                $response = Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))->delete(
-                    env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_AVATARS') . "/{$avatarFile}"
-                );
-
-                if ($response->failed()) {
-                    throw new \Exception('Failed to delete avatar: ' . $response->body());
+                $photoHost = parse_url($user->photo, PHP_URL_HOST);
+                $supabaseHost = parse_url(env('SUPABASE_URL'), PHP_URL_HOST);
+            
+                if ($photoHost === $supabaseHost) {
+                    $avatarFile = basename(parse_url($user->photo, PHP_URL_PATH));
+            
+                    $response = Http::withToken(env('SUPABASE_SERVICE_ROLE_KEY'))->delete(
+                        env('SUPABASE_URL') . "/storage/v1/object/" . env('SUPABASE_BUCKET_AVATARS') . "/{$avatarFile}"
+                    );
+            
+                    if ($response->failed()) {
+                        throw new \Exception('Failed to delete avatar: ' . $response->body());
+                    }
                 }
-            }
+            }            
 
             // 2. Delete posts
             $posts = Post::where('user_id', $user->id)->get();

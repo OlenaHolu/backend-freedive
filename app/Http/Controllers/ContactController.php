@@ -23,7 +23,7 @@ class ContactController extends Controller
 
         $gmail->send(
             'oleholu@gmail.com',
-            '📥 New contact message',
+            "FreediveAnalyzer: New contact message',
             $html
         );
 

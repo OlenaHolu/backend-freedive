@@ -1,24 +1,34 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
+use App\Services\GmailService;
 
 class ContactController extends Controller
 {
-    public function send(Request $request)
+    public function send(Request $request, GmailService $gmail)
     {
         $data = $request->validate([
-            'name' => 'required|string',
+            'name' => 'required|string|max:255',
             'email' => 'required|email',
-            'message' => 'required|string',
+            'message' => 'required|string|max:2000',
         ]);
 
-        Mail::raw("Mensaje de: {$data['name']} <{$data['email']}>\n\n{$data['message']}", function ($message) {
-            $message->to('oleholu@gmail.com')
-                    ->subject('Nuevo mensaje desde el formulario de contacto');
-        });
+        $html = view('emails.contact', [
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'bodyMessage' => $data['message'],
+        ])->render();
 
-        return response()->json(['message' => 'Mensaje enviado'], 200);
+        $gmail->send(
+            'oleholu@gmail.com',
+            '📥 New contact message',
+            $html
+        );
+
+        return response()->json([
+            'message' => 'Your message was sent successfully ✅',
+        ]);
     }
 }

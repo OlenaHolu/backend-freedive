@@ -18,6 +18,7 @@ class Dive extends Model
         'user_id',
         'StartTime',
         'Duration',
+        'SurfaceTime',
         'Mode',
         'MaxDepth',
         'StartTemperature',

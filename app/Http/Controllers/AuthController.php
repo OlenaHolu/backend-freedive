@@ -133,7 +133,7 @@ class AuthController extends Controller
                     'name' => $googleUserDetails->getName(),
                     'email' => $googleUserDetails->getEmail(),
                     'photo' => $googleUserDetails->getAvatar() ?: null,
-                    'password' => Hash::make(uniqid()), // valor aleatorio
+                    'password' => Hash::make(uniqid()),
                 ]);
             }
 

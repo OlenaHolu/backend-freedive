@@ -176,6 +176,7 @@ class UserController extends Controller
             return response()->json([
                 'errorCode' => ErrorCodes::INTERNAL_SERVER_ERROR,
                 'message' => 'Failed to delete user',
+                'details' => $e->getMessage(),
             ], 500);
         }
     }
